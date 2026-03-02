@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "AMPA Connect - Comunidad Psicoeducativa",
   description: "Plataforma web para AMPAs enfocada en contenido psicoeducativo y comunidad.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/icon-192x192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -37,6 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>

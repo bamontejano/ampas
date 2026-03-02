@@ -19,10 +19,9 @@ export default function NewThreadPage() {
     async function handleSubmit(formData: FormData) {
         setError(null)
         startTransition(async () => {
-            try {
-                await createThread(formData)
-            } catch (err: any) {
-                setError(err.message || 'Ocurrió un error al crear el hilo. Por favor, inténtalo de nuevo.')
+            const result = await createThread(formData)
+            if (result && 'error' in result) {
+                setError(result.error as string)
             }
         })
     }

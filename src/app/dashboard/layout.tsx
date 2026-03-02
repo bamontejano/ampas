@@ -8,10 +8,11 @@ import {
     Gamepad2,
     Calendar,
     LogOut,
-    User,
     Settings,
-    Bell,
-    Vote
+    Vote,
+    Ticket,
+    UserCog,
+    ChevronRight
 } from 'lucide-react'
 import NotificationBell from '@/components/dashboard/notification-bell'
 
@@ -51,6 +52,14 @@ export default async function DashboardLayout({
         { name: 'Mis Apps', href: '/dashboard/apps', icon: Gamepad2 },
     ]
 
+    const isAdmin = ['admin_ampa', 'superadmin', 'junta'].includes(profile?.rol || '')
+    const isFullAdmin = ['admin_ampa', 'superadmin'].includes(profile?.rol || '')
+
+    const adminNavItems = isAdmin ? [
+        { name: 'Invitaciones', href: '/dashboard/admin/invitaciones', icon: Ticket },
+        ...(isFullAdmin ? [{ name: 'Usuarios', href: '/dashboard/admin/usuarios', icon: UserCog }] : []),
+    ] : []
+
     return (
         <div className="flex min-h-screen bg-slate-50/50">
             {/* Sidebar Desktop */}
@@ -62,7 +71,7 @@ export default async function DashboardLayout({
                         </span>
                     </div>
 
-                    <div className="flex flex-col flex-1 p-4 space-y-1">
+                    <div className="flex flex-col flex-1 p-4 space-y-1 overflow-y-auto">
                         {navItems.map((item) => (
                             <Link
                                 key={item.name}
@@ -73,6 +82,26 @@ export default async function DashboardLayout({
                                 {item.name}
                             </Link>
                         ))}
+
+                        {adminNavItems.length > 0 && (
+                            <div className="pt-4">
+                                <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
+                                    <Settings className="w-3.5 h-3.5 text-slate-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Administración</span>
+                                </div>
+                                {adminNavItems.map((item) => (
+                                    <Link
+                                        key={item.name}
+                                        href={item.href}
+                                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all group"
+                                    >
+                                        <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                        {item.name}
+                                        <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* User Section */}
@@ -134,6 +163,15 @@ export default async function DashboardLayout({
                             {item.name}
                         </Link>
                     ))}
+                    {adminNavItems.length > 0 && (
+                        <Link
+                            href="/dashboard/admin/usuarios"
+                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-indigo-600"
+                        >
+                            <Settings className="w-6 h-6" />
+                            Admin
+                        </Link>
+                    )}
                 </div>
             </nav>
         </div>

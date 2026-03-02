@@ -31,27 +31,33 @@ export async function createThread(formData: FormData) {
     const content = formData.get('content') as string
     const fullContent = `${title}\n\n${content}`
 
-    const { data: post, error } = await supabase
-        .from('posts')
-        .insert({
-            autor_id: user.id,
-            ampa_id: profile.ampa_id as string,
-            contenido: fullContent,
-            tipo: 'post',
-            foro_categoria_id: categoryId,
-            pinned: false,
-            likes_count: 0,
-            comentarios_count: 0
-        })
-        .select()
-        .single()
+    try {
+        const { data: post, error } = await supabase
+            .from('posts')
+            .insert({
+                autor_id: user.id,
+                ampa_id: profile.ampa_id as string,
+                contenido: fullContent,
+                tipo: 'post',
+                foro_categoria_id: categoryId,
+                pinned: false,
+                likes_count: 0,
+                comentarios_count: 0
+            })
+            .select()
+            .single()
 
-    if (error) {
-        console.error('Error creating post:', error)
-        throw new Error('Error al crear el hilo')
+        if (error) {
+            console.error('Error creating post:', error)
+            return { error: 'Error al crear el hilo' }
+        }
+
+        revalidatePath(`/dashboard/comunidad/foros/${categoryId}`)
+    } catch (e: any) {
+        if (e.message === 'NEXT_REDIRECT') throw e
+        return { error: e.message || 'Error desconocido' }
     }
 
-    revalidatePath(`/dashboard/comunidad/foros/${categoryId}`)
     redirect(`/dashboard/comunidad/foros/${categoryId}`)
 }
 
