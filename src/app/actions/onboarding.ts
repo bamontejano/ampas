@@ -47,11 +47,13 @@ export async function redeemInvitation(formData: FormData) {
     if (useError) throw new Error('Error al procesar la invitación')
 
     // Second, update user profile
+    const isAdminCode = invitation.codigo.startsWith('ADMIN-')
     const { error: profileError } = await supabase
         .from('profiles')
         .update({
             ampa_id: invitation.ampa_id,
-            onboarding_completado: true
+            onboarding_completado: true,
+            ...(isAdminCode ? { rol: 'admin_ampa' } : {}) // Auto-assign admin if code is ADMIN-
         })
         .eq('id', user.id)
 
