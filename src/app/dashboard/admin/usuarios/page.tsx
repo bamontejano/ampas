@@ -54,6 +54,7 @@ export default async function AdminUsuariosPage() {
     const totalFamilias = miembros.filter(m => m.rol === 'familia').length
     const totalJunta = miembros.filter(m => m.rol === 'junta').length
     const totalAdmins = miembros.filter(m => ['admin_ampa', 'superadmin'].includes(m.rol)).length
+    const totalSocios = miembros.filter(m => m.estado_suscripcion === 'activo').length
 
     return (
         <div className="max-w-6xl mx-auto space-y-10 pb-20">
@@ -78,7 +79,7 @@ export default async function AdminUsuariosPage() {
                     <div className="flex flex-wrap gap-4 pt-2">
                         {[
                             { label: 'Total miembros', value: miembros.length, icon: Users, bg: 'bg-white/20' },
-                            { label: 'Familias', value: totalFamilias, icon: Users, bg: 'bg-white/15' },
+                            { label: 'Socios Activos', value: totalSocios, icon: ShieldCheck, bg: 'bg-emerald-400/30' },
                             { label: 'Junta', value: totalJunta, icon: ShieldCheck, bg: 'bg-white/15' },
                             { label: 'Admins', value: totalAdmins, icon: Crown, bg: 'bg-white/15' },
                         ].map(s => (
@@ -109,7 +110,7 @@ export default async function AdminUsuariosPage() {
                     </div>
                     <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 bg-slate-50 rounded-2xl px-4 py-2 border border-slate-100">
                         <Search className="h-3.5 w-3.5" />
-                        Puedes cambiar el rol con el selector
+                        Puedes cambiar el rol y el estado de socio
                     </div>
                 </div>
 
@@ -136,11 +137,11 @@ export default async function AdminUsuariosPage() {
                                     <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400 hidden sm:table-cell">
                                         Email
                                     </th>
-                                    <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400 hidden md:table-cell">
-                                        Se unió
+                                    <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400 hidden md:table-cell text-center">
+                                        Estado Socio
                                     </th>
                                     <th className="px-8 py-5 text-right text-xs font-black uppercase tracking-widest text-slate-400">
-                                        Rol / Acciones
+                                        Acciones
                                     </th>
                                 </tr>
                             </thead>
@@ -151,10 +152,10 @@ export default async function AdminUsuariosPage() {
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-3">
                                                 <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm border-2 border-white shadow-sm ${m.rol === 'admin_ampa' || m.rol === 'superadmin'
-                                                        ? 'bg-indigo-100 text-indigo-700'
-                                                        : m.rol === 'junta'
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : 'bg-slate-100 text-slate-600'
+                                                    ? 'bg-indigo-100 text-indigo-700'
+                                                    : m.rol === 'junta'
+                                                        ? 'bg-blue-100 text-blue-700'
+                                                        : 'bg-slate-100 text-slate-600'
                                                     }`}>
                                                     {m.avatar_url ? (
                                                         <img src={m.avatar_url} alt={m.nombre_completo} className="h-10 w-10 rounded-full object-cover" />
@@ -182,24 +183,23 @@ export default async function AdminUsuariosPage() {
                                             </span>
                                         </td>
 
-                                        {/* Date joined */}
-                                        <td className="px-8 py-5 hidden md:table-cell">
-                                            <span className="inline-flex items-center gap-1.5 text-sm text-slate-400 font-medium">
-                                                <Calendar className="h-3.5 w-3.5 text-slate-300" />
-                                                {new Date(m.created_at).toLocaleDateString('es-ES', {
-                                                    day: '2-digit',
-                                                    month: 'short',
-                                                    year: 'numeric',
-                                                })}
-                                            </span>
+                                        {/* Subscription Status */}
+                                        <td className="px-8 py-5 hidden md:table-cell text-center">
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${m.estado_suscripcion === 'activo'
+                                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                                    : 'bg-slate-50 text-slate-400 border border-slate-100'
+                                                }`}>
+                                                {m.estado_suscripcion === 'activo' ? 'Activo' : 'Pendiente'}
+                                            </div>
                                         </td>
 
                                         {/* Actions (client) */}
                                         <td className="px-8 py-5">
                                             <UserRowActions
                                                 memberId={m.id}
-                                                currentRole={m.rol as 'familia' | 'junta' | 'admin_ampa'}
+                                                currentRole={m.rol as any}
                                                 currentUserId={user.id}
+                                                currentSubscription={m.estado_suscripcion || 'pendiente'}
                                             />
                                         </td>
                                     </tr>

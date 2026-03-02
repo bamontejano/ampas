@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { updateMemberRole, removeMember } from '@/app/actions/admin'
-import { ChevronDown, Trash2, Loader2, ShieldCheck, Users, Crown } from 'lucide-react'
+import { updateMemberRole, removeMember, updateMemberSubscription } from '@/app/actions/admin'
+import { ChevronDown, Trash2, Loader2, ShieldCheck, Users, Crown, CreditCard, CheckCircle2, Clock } from 'lucide-react'
 
 type Role = 'familia' | 'junta' | 'admin_ampa'
+type SubscriptionStatus = 'activo' | 'pendiente' | 'expirado'
 
 interface UserRowActionsProps {
     memberId: string
     currentRole: Role
     currentUserId: string
+    currentSubscription: SubscriptionStatus
 }
 
 const roleLabels: Record<Role, { label: string; color: string; icon: React.ReactNode }> = {
@@ -30,6 +32,34 @@ const roleLabels: Record<Role, { label: string; color: string; icon: React.React
     },
 }
 
+const subscriptionLabels: Record<SubscriptionStatus, { label: string; color: string; icon: React.ReactNode }> = {
+    activo: {
+        label: 'Socio Activo',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        icon: <CheckCircle2 className="h-3 w-3" />,
+    },
+    pendiente: {
+        label: 'Pendiente',
+        color: 'bg-amber-50 text-amber-700 border-amber-100',
+        icon: <Clock className="h-3 w-3" />,
+    },
+    expirado: {
+        label: 'Expirado',
+        color: 'bg-rose-50 text-rose-700 border-rose-100',
+        icon: <Clock className="h-3 w-3" />,
+    },
+}
+
+export function SubscriptionBadge({ status }: { status: SubscriptionStatus }) {
+    const config = subscriptionLabels[status] ?? subscriptionLabels.pendiente
+    return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-tight border ${config.color}`}>
+            {config.icon}
+            {config.label}
+        </span>
+    )
+}
+
 export function UserRoleBadge({ role }: { role: Role }) {
     const config = roleLabels[role] ?? roleLabels.familia
     return (
@@ -40,8 +70,9 @@ export function UserRoleBadge({ role }: { role: Role }) {
     )
 }
 
-export function UserRowActions({ memberId, currentRole, currentUserId }: UserRowActionsProps) {
+export function UserRowActions({ memberId, currentRole, currentUserId, currentSubscription }: UserRowActionsProps) {
     const [role, setRole] = useState<Role>(currentRole)
+    const [subscription, setSubscription] = useState<SubscriptionStatus>(currentSubscription)
     const [showRoleMenu, setShowRoleMenu] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -63,6 +94,19 @@ export function UserRowActions({ memberId, currentRole, currentUserId }: UserRow
         })
     }
 
+    const handleSubscriptionToggle = () => {
+        const nextStatus = subscription === 'activo' ? 'pendiente' : 'activo'
+        setError(null)
+        startTransition(async () => {
+            try {
+                await updateMemberSubscription(memberId, nextStatus as any)
+                setSubscription(nextStatus as any)
+            } catch (err: any) {
+                setError(err.message)
+            }
+        })
+    }
+
     const handleRemove = () => {
         setShowConfirm(false)
         setError(null)
@@ -77,9 +121,10 @@ export function UserRowActions({ memberId, currentRole, currentUserId }: UserRow
 
     if (isSelf) {
         return (
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end gap-3">
+                <SubscriptionBadge status={subscription} />
                 <UserRoleBadge role={role} />
-                <span className="ml-3 text-xs text-slate-400 font-medium">(tú)</span>
+                <span className="text-xs text-slate-400 font-medium">(tú)</span>
             </div>
         )
     }
@@ -92,8 +137,30 @@ export function UserRowActions({ memberId, currentRole, currentUserId }: UserRow
                 </span>
             )}
 
+            {/* Subscription Toggle */}
+            <button
+                onClick={handleSubscriptionToggle}
+                disabled={isPending}
+                className={`group relative flex items-center justify-center h-8 px-3 rounded-xl border transition-all ${subscription === 'activo'
+                        ? 'bg-emerald-50 border-emerald-100 text-emerald-600 hover:bg-emerald-100'
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-amber-200 hover:text-amber-600'
+                    }`}
+                title={subscription === 'activo' ? 'Marcar como Pendiente' : 'Marcar como Socio Activo'}
+            >
+                {isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <CreditCard className="h-3.5 w-3.5" />
+                        <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">
+                            {subscription === 'activo' ? 'Socio' : 'No Socio'}
+                        </span>
+                    </div>
+                )}
+            </button>
+
             {/* Role Selector */}
-            <div className="relative">
+            <div className="relative border-l border-slate-100 ml-1 pl-2">
                 <button
                     onClick={() => setShowRoleMenu(v => !v)}
                     disabled={isPending}

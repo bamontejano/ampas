@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendNotificationToUser } from './notifications'
 
 // ─── User Management Actions ──────────────────────────────────────────────────
 
@@ -39,6 +40,50 @@ export async function updateMemberRole(memberId: string, newRole: 'familia' | 'j
     const { error } = await supabase
         .from('profiles')
         .update({ rol: newRole })
+        .eq('id', memberId)
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/dashboard/admin/usuarios')
+    return { success: true }
+}
+
+export async function updateMemberSubscription(memberId: string, status: 'activo' | 'pendiente', months: number = 12) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('No autenticado')
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('ampa_id, rol')
+        .eq('id', user.id)
+        .single()
+
+    if (!['admin_ampa', 'superadmin', 'junta'].includes(profile?.rol || '')) {
+        throw new Error('No tienes permisos para gestionar suscripciones')
+    }
+
+    // Verify same AMPA
+    const { data: target } = await supabase
+        .from('profiles')
+        .select('ampa_id')
+        .eq('id', memberId)
+        .single()
+
+    if (profile?.rol !== 'superadmin' && target?.ampa_id !== profile?.ampa_id) {
+        throw new Error('El usuario no pertenece a tu AMPA')
+    }
+
+    const until = status === 'activo'
+        ? new Date(new Date().setMonth(new Date().getMonth() + months)).toISOString()
+        : null
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            estado_suscripcion: status,
+            suscripcion_hasta: until
+        })
         .eq('id', memberId)
 
     if (error) throw new Error(error.message)

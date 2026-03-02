@@ -1,5 +1,5 @@
 -- =============================================================================
--- AMPA Connect — SQL ESENCIAL (AMPAs, Perfiles e Invitaciones)
+-- AMPA Connect — SQL ESENCIAL + NOTIFICACIONES
 -- =============================================================================
 
 -- ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -57,7 +57,6 @@ USING (
 
 
 -- ─── TABLA: invitaciones ─────────────────────────────────────────────────────
--- Si esta tabla no existe, comenta estas líneas
 ALTER TABLE invitaciones ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "admins leen invitaciones de su ampa" ON invitaciones;
@@ -72,3 +71,42 @@ WITH CHECK (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_m
 
 CREATE POLICY "admins eliminan invitaciones" ON invitaciones FOR DELETE TO authenticated
 USING (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() IN ('admin_ampa', 'junta')));
+
+
+-- ─── TABLA: notificaciones ───────────────────────────────────────────────────
+-- 1. Crear la tabla (por si no existe)
+CREATE TABLE IF NOT EXISTS public.notificaciones (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    perfil_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    ampa_id UUID REFERENCES public.ampas(id) ON DELETE CASCADE,
+    titulo TEXT NOT NULL,
+    contenido TEXT NOT NULL,
+    leida BOOLEAN DEFAULT false NOT NULL,
+    tipo TEXT CHECK (tipo IN ('evento', 'votacion', 'comunidad', 'sistema')) NOT NULL,
+    enlace TEXT
+);
+
+-- 2. Activar RLS
+ALTER TABLE public.notificaciones ENABLE ROW LEVEL SECURITY;
+
+-- 3. Políticas
+DROP POLICY IF EXISTS "usuarios ven sus propias notificaciones" ON notificaciones;
+CREATE POLICY "usuarios ven sus propias notificaciones" ON notificaciones FOR SELECT TO authenticated
+USING (perfil_id = auth.uid());
+
+DROP POLICY IF EXISTS "usuarios actualizan sus propias notificaciones" ON notificaciones;
+CREATE POLICY "usuarios actualizan sus propias notificaciones" ON notificaciones FOR UPDATE TO authenticated
+USING (perfil_id = auth.uid()) WITH CHECK (perfil_id = auth.uid());
+
+-- 4. Activar Realtime (Solo si no está ya activo)
+-- Esto se suele hacer por interfaz, pero este SQL ayuda:
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'notificaciones'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notificaciones;
+  END IF;
+END $$;

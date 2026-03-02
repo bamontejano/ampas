@@ -60,3 +60,25 @@ export async function sendNotificationToAMPA(ampaId: string, data: {
 
     if (error) console.error('Error sending notifications:', error)
 }
+
+export async function sendNotificationToUser(userId: string, ampaId: string, data: {
+    titulo: string
+    contenido: string
+    tipo: 'evento' | 'votacion' | 'comunidad' | 'sistema'
+    enlace?: string
+}) {
+    const supabase: any = await createClient()
+
+    const { error } = await (supabase.from('notificaciones' as any) as any)
+        .insert({
+            perfil_id: userId,
+            ampa_id: ampaId,
+            titulo: data.titulo,
+            contenido: data.contenido,
+            tipo: data.tipo,
+            enlace: data.enlace || null,
+            leida: false
+        })
+
+    if (error) console.error('Error sending notification to user:', error)
+}

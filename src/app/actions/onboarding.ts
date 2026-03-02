@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { sendNotificationToAMPA } from './notifications'
 
 export async function redeemInvitation(formData: FormData) {
     const supabase = await createClient()
@@ -63,6 +64,16 @@ export async function redeemInvitation(formData: FormData) {
 
         throw new Error('Error al actualizar el perfil')
     }
+
+    // 5. NOTIFICAR A LOS ADMINS DEL AMPA
+    const { data: userData } = await supabase.from('profiles').select('nombre_completo').eq('id', user.id).single()
+
+    await sendNotificationToAMPA(invitation.ampa_id, {
+        titulo: 'Nuevo miembro en la comunidad',
+        contenido: `${userData?.nombre_completo || 'Un nuevo usuario'} se ha unido al AMPA usando un código.`,
+        tipo: 'comunidad',
+        enlace: '/dashboard/admin/usuarios'
+    })
 
     revalidatePath('/', 'layout')
     redirect('/dashboard')
