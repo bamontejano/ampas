@@ -12,7 +12,10 @@ import {
     Vote,
     Ticket,
     UserCog,
-    ChevronRight
+    ChevronRight,
+    Building2,
+    LayoutGrid,
+    Shield
 } from 'lucide-react'
 import NotificationBell from '@/components/dashboard/notification-bell'
 
@@ -52,12 +55,20 @@ export default async function DashboardLayout({
         { name: 'Mis Apps', href: '/dashboard/apps', icon: Gamepad2 },
     ]
 
-    const isAdmin = ['admin_ampa', 'superadmin', 'junta'].includes(profile?.rol || '')
-    const isFullAdmin = ['admin_ampa', 'superadmin'].includes(profile?.rol || '')
+    const rol = profile?.rol || ''
+    const isSuperadmin = rol === 'superadmin'
+    const isAmpaAdmin = rol === 'admin_ampa'
+    const isJunta = rol === 'junta'
 
-    const adminNavItems = isAdmin ? [
+    // AMPA admin nav: admin_ampa only (junta only sees invitaciones)
+    const ampaAdminNavItems = (isAmpaAdmin || isJunta) ? [
+        ...(isAmpaAdmin ? [{ name: 'Usuarios', href: '/dashboard/admin/usuarios', icon: UserCog }] : []),
         { name: 'Invitaciones', href: '/dashboard/admin/invitaciones', icon: Ticket },
-        ...(isFullAdmin ? [{ name: 'Usuarios', href: '/dashboard/admin/usuarios', icon: UserCog }] : []),
+    ] : []
+
+    // Superadmin-only nav: platform management
+    const superadminNavItems = isSuperadmin ? [
+        { name: 'Todas las AMPAs', href: '/dashboard/superadmin/ampas', icon: Building2 },
     ] : []
 
     return (
@@ -83,17 +94,39 @@ export default async function DashboardLayout({
                             </Link>
                         ))}
 
-                        {adminNavItems.length > 0 && (
+                        {/* AMPA Admin Section */}
+                        {ampaAdminNavItems.length > 0 && (
                             <div className="pt-4">
                                 <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
                                     <Settings className="w-3.5 h-3.5 text-slate-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Administración</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mi AMPA</span>
                                 </div>
-                                {adminNavItems.map((item) => (
+                                {ampaAdminNavItems.map((item) => (
                                     <Link
                                         key={item.name}
                                         href={item.href}
                                         className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all group"
+                                    >
+                                        <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                        {item.name}
+                                        <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Superadmin Section */}
+                        {superadminNavItems.length > 0 && (
+                            <div className="pt-4">
+                                <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
+                                    <Shield className="w-3.5 h-3.5 text-violet-400" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-violet-400">Plataforma</span>
+                                </div>
+                                {superadminNavItems.map((item) => (
+                                    <Link
+                                        key={item.name}
+                                        href={item.href}
+                                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-violet-50 hover:text-violet-600 transition-all group"
                                     >
                                         <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                         {item.name}
@@ -112,7 +145,13 @@ export default async function DashboardLayout({
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm font-semibold text-slate-900 truncate">{profile?.nombre_completo}</p>
-                                <p className="text-xs text-slate-500 truncate">{ampa?.nombre || 'Mi AMPA'}</p>
+                                <p className="text-xs truncate font-semibold"
+                                    style={{ color: rol === 'superadmin' ? '#7c3aed' : rol === 'admin_ampa' ? '#4f46e5' : '#6b7280' }}>
+                                    {rol === 'superadmin' ? '⚡ Superadmin'
+                                        : rol === 'admin_ampa' ? `Admin · ${ampa?.nombre || 'AMPA'}`
+                                            : rol === 'junta' ? `Junta · ${ampa?.nombre || 'AMPA'}`
+                                                : ampa?.nombre || 'Miembro'}
+                                </p>
                             </div>
                         </div>
 
@@ -163,13 +202,22 @@ export default async function DashboardLayout({
                             {item.name}
                         </Link>
                     ))}
-                    {adminNavItems.length > 0 && (
+                    {ampaAdminNavItems.length > 0 && (
                         <Link
                             href="/dashboard/admin/usuarios"
                             className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-indigo-600"
                         >
-                            <Settings className="w-6 h-6" />
+                            <UserCog className="w-6 h-6" />
                             Admin
+                        </Link>
+                    )}
+                    {superadminNavItems.length > 0 && (
+                        <Link
+                            href="/dashboard/superadmin/ampas"
+                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-violet-600"
+                        >
+                            <LayoutGrid className="w-6 h-6" />
+                            Plat.
                         </Link>
                     )}
                 </div>
