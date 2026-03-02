@@ -1,23 +1,25 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import OnboardingClient from '@/components/onboarding/onboarding-client'
 
-export default async function OnboardingPage() {
+export default async function SuperadminLayout({
+    children,
+}: {
+    children: React.ReactNode
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) redirect('/auth/login')
 
-    // Optional: check if already completed and redirect
     const { data: profile } = await supabase
         .from('profiles')
-        .select('onboarding_completado')
+        .select('rol')
         .eq('id', user.id)
         .single()
 
-    if (profile?.onboarding_completado) {
+    if (profile?.rol !== 'superadmin') {
         redirect('/dashboard')
     }
 
-    return <OnboardingClient />
+    return <>{children}</>
 }

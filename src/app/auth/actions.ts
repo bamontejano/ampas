@@ -30,20 +30,23 @@ export async function register(formData: FormData) {
     const nombre = formData.get('nombre') as string
     const codigoInvitacion = formData.get('codigo_invitacion') as string | null
 
-    if (!codigoInvitacion) {
-        return { error: 'El código de invitación es obligatorio' }
-    }
+    // El código de invitación ahora es opcional. 
+    // Si no se proporciona, el usuario pasará por la pantalla de Onboarding después de registrarse.
 
     // 1. Validar el código de invitación ANTES de registrar al usuario
-    const { data: invitacion, error: invError } = await supabase
-        .from('invitaciones')
-        .select('*')
-        .eq('codigo', codigoInvitacion.toUpperCase())
-        .eq('usado', false)
-        .single()
+    let invitacion = null
+    if (codigoInvitacion) {
+        const { data, error: invError } = await supabase
+            .from('invitaciones')
+            .select('*')
+            .eq('codigo', codigoInvitacion.toUpperCase())
+            .eq('usado', false)
+            .single()
 
-    if (invError || !invitacion) {
-        return { error: 'Código de invitación inválido o ya utilizado. Contacta con tu AMPA.' }
+        if (invError || !data) {
+            return { error: 'Código de invitación inválido o ya utilizado. Puedes dejarlo vacío para entrar como invitado.' }
+        }
+        invitacion = data
     }
 
     // 2. Si el código es válido, procedemos con el registro en Auth
@@ -66,24 +69,26 @@ export async function register(formData: FormData) {
         return { error: 'No se pudo crear la cuenta. Inténtalo de nuevo.' }
     }
 
-    // 3. Vincular el perfil recién creado con el AMPA de la invitación
-    // El trigger en la DB suele crear el profile automáticamente, aquí lo actualizamos
-    const { error: linkError } = await supabase
-        .from('profiles')
-        .update({ ampa_id: invitacion.ampa_id })
-        .eq('id', authData.user.id)
+    // 3. Vincular el perfil si hubo invitación
+    if (invitacion) {
+        const { error: linkError } = await supabase
+            .from('profiles')
+            .update({
+                ampa_id: invitacion.ampa_id,
+                onboarding_completado: true // Ya tiene ampa, no necesita onboarding
+            })
+            .eq('id', authData.user.id)
 
-    if (linkError) {
-        console.error('Error al vincular con el AMPA:', linkError)
-        // Nota: El usuario ya está creado, pero no vinculado. 
-        // Esto podría requerir intervención manual o un reintento posterior.
+        if (linkError) {
+            console.error('Error al vincular con el AMPA:', linkError)
+        }
+
+        // 4. Marcar la invitación como utilizada
+        await supabase
+            .from('invitaciones')
+            .update({ usado: true, usado_por: authData.user.id })
+            .eq('id', invitacion.id)
     }
-
-    // 4. Marcar la invitación como utilizada
-    await supabase
-        .from('invitaciones')
-        .update({ usado: true, usado_por: authData.user.id })
-        .eq('id', invitacion.id)
 
     return { success: true, message: '¡Cuenta creada! Revisa tu email para confirmar tu cuenta y empezar.' }
 }

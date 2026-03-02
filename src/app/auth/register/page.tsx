@@ -32,7 +32,7 @@ export default function RegisterPage() {
                 <div className="text-center">
                     <h1 className="text-3xl font-black tracking-tight text-slate-900">Únete a tu AMPA</h1>
                     <p className="mt-2 text-sm text-slate-500">
-                        Necesitas un código de invitación de tu asociación
+                        Crea tu cuenta para conectar con tu centro escolar
                     </p>
                 </div>
 
@@ -102,17 +102,19 @@ export default function RegisterPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="codigo_invitacion" className="block text-xs font-bold uppercase tracking-wider text-indigo-700 ml-1">
-                                    Código de Invitación
+                                <label htmlFor="codigo_invitacion" className="block text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">
+                                    Código de Invitación (Opcional)
                                 </label>
                                 <input
                                     id="codigo_invitacion"
                                     name="codigo_invitacion"
                                     type="text"
-                                    required
-                                    className="mt-1 block w-full rounded-xl border-2 border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all uppercase font-mono tracking-widest text-indigo-900"
+                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all uppercase font-mono tracking-widest"
                                     placeholder="ABCDEF"
                                 />
+                                <p className="mt-1 text-[10px] text-slate-400 font-medium px-1">
+                                    Si no tienes código, podrás entrar como invitado y añadirlo más tarde.
+                                </p>
                             </div>
                         </div>
 

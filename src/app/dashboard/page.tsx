@@ -11,7 +11,8 @@ import {
     Users,
     Gamepad2,
     Calendar,
-    Sparkles
+    Sparkles,
+    Shield
 } from 'lucide-react'
 import Link from 'next/link'
 import { Database } from '@/types/database'
@@ -33,31 +34,42 @@ export default async function DashboardPage() {
         .single()
 
     const profile = profileRaw as unknown as ProfileWithAmpa
+    const rol = profile?.rol || 'familia'
+    const isSuperadmin = rol === 'superadmin'
 
-    // Fetch real posts from Supabase
-    const { data: postsRaw } = await supabase
-        .from('posts')
-        .select(`
-            *,
-            profiles:autor_id (
-                nombre_completo,
-                avatar_url,
-                rol
-            )
-        `)
-        .eq('ampa_id', profile?.ampa_id as string)
-        .order('created_at', { ascending: false })
-        .limit(10)
+    // Fetch real posts from Supabase (Only if has ampa_id or is superadmin)
+    let posts: any[] = []
+    let likedPostIds: string[] = []
 
-    const posts = postsRaw as any[]
+    if (profile?.ampa_id || isSuperadmin) {
+        const query = supabase
+            .from('posts')
+            .select(`
+                *,
+                profiles:autor_id (
+                    nombre_completo,
+                    avatar_url,
+                    rol
+                )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(10)
 
-    // Fetch user's liked posts
-    const { data: userLikes } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('perfil_id', user?.id as string)
+        // Filter by ampa_id if not superadmin
+        if (!isSuperadmin) {
+            query.eq('ampa_id', profile?.ampa_id as string)
+        }
 
-    const likedPostIds = (userLikes || []).map(like => (like as any).post_id)
+        const { data: postsRaw } = await query
+        posts = postsRaw || []
+
+        const { data: userLikes } = await supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('perfil_id', user?.id as string)
+
+        likedPostIds = (userLikes || []).map(like => (like as any).post_id)
+    }
 
     const apps = [
         { name: 'Gestión de Límites', desc: 'Control y acuerdos con adolescentes.', icon: AlertCircle, color: 'bg-indigo-500', href: '/dashboard/comunidad/foros/adolescencia-limites' },
@@ -67,52 +79,78 @@ export default async function DashboardPage() {
     return (
         <div className="mx-auto max-w-6xl space-y-8 pb-16">
             {/* Welcome Hero */}
-            <section className="relative overflow-hidden rounded-3xl bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-200">
-                <div className="relative z-10 space-y-2">
-                    <h2 className="text-3xl font-bold text-white">¡Hola, {profile?.nombre_completo?.split(' ')[0]}! 👋</h2>
-                    <p className="max-w-md text-indigo-100">
-                        Bienvenido al espacio comunitario de {profile?.ampas?.nombre || 'tu AMPA'}.
-                        Aquí tienes los recursos psicoeducativos del día.
+            <section className={`relative overflow-hidden rounded-[2.5rem] p-8 text-white shadow-2xl ${isSuperadmin
+                ? 'bg-gradient-to-br from-violet-600 to-indigo-900 shadow-violet-200'
+                : 'bg-indigo-600 shadow-indigo-200'
+                }`}>
+                <div className="relative z-10 space-y-3">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-md border border-white/10">
+                        {isSuperadmin ? 'Plataforma Global' : (profile?.ampas?.nombre || 'Miembro')}
+                    </div>
+                    <h2 className="text-4xl font-black tracking-tighter text-white">¡Hola, {profile?.nombre_completo?.split(' ')[0]}! 👋</h2>
+                    <p className="max-w-md text-indigo-100 font-medium leading-relaxed">
+                        {isSuperadmin
+                            ? 'Tienes acceso total a la configuración de la plataforma y gestión de todas las AMPAs.'
+                            : `Bienvenido al espacio comunitario de ${profile?.ampas?.nombre || 'tu AMPA'}. Aquí tienes los recursos psicoeducativos del día.`
+                        }
                     </p>
+
+                    {isSuperadmin && (
+                        <div className="flex gap-3 pt-2">
+                            <Link href="/dashboard/superadmin/ampas" className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition-all">
+                                Gestionar AMPAs
+                            </Link>
+                        </div>
+                    )}
                 </div>
-                <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-indigo-500/20 blur-3xl"></div>
-                <div className="absolute right-12 top-12 hidden lg:block opacity-20">
-                    <Lightbulb className="w-32 h-32" />
+                <div className="absolute -right-8 -top-8 h-64 w-64 rounded-full bg-indigo-400/20 blur-3xl"></div>
+                <div className="absolute right-12 top-10 hidden lg:block opacity-10">
+                    {isSuperadmin ? <Shield className="w-40 h-40" /> : <Lightbulb className="w-32 h-32" />}
                 </div>
             </section>
 
             <div className="grid gap-8 lg:grid-cols-3">
                 {/* Main Feed Column */}
                 <div className="lg:col-span-2 space-y-8">
-                    <SocialPostCompose
-                        userName={profile?.nombre_completo || 'Usuario'}
-                        userAvatar={profile?.avatar_url}
-                    />
+                    {profile?.ampa_id && (
+                        <SocialPostCompose
+                            userName={profile?.nombre_completo || 'Usuario'}
+                            userAvatar={profile?.avatar_url}
+                        />
+                    )}
 
                     <div className="flex items-center justify-between pt-4">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                             <Sparkles className="h-6 w-6 text-amber-500" />
-                            Muro de la Comunidad
+                            {isSuperadmin ? 'Actividad de la Plataforma' : 'Muro de la Comunidad'}
                         </h3>
-                        <Link href="/dashboard/comunidad" className="text-sm font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest">
-                            Explorar Foros
-                        </Link>
+                        {!isSuperadmin && (
+                            <Link href="/dashboard/comunidad" className="text-sm font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest">
+                                Explorar Foros
+                            </Link>
+                        )}
                     </div>
 
-                    <RealtimeFeed
-                        initialPosts={posts || []}
-                        ampaId={profile?.ampa_id as string}
-                        initialLikedPosts={likedPostIds}
-                    />
+                    {profile?.ampa_id || isSuperadmin ? (
+                        <RealtimeFeed
+                            initialPosts={posts}
+                            ampaId={profile?.ampa_id || 'global'}
+                            initialLikedPosts={likedPostIds}
+                        />
+                    ) : (
+                        <div className="p-12 text-center rounded-[2.5rem] border border-dashed border-slate-200 bg-slate-50">
+                            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Asigna una AMPA a tu perfil para ver el muro</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar Column */}
                 <div className="space-y-8">
                     {/* Quick Access Apps */}
                     <div className="rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/40">
-                        <h3 className="mb-6 font-black text-slate-900 flex items-center gap-2 uppercase text-xs tracking-widest">
+                        <h3 className="mb-6 font-black text-slate-900 flex items-center gap-2 uppercase text-[10px] tracking-[0.2em]">
                             <Gamepad2 className="h-4 w-4 text-indigo-500" />
-                            Tus Herramientas
+                            Servicios
                         </h3>
                         <div className="space-y-4">
                             {apps.map((app) => (
@@ -166,3 +204,4 @@ export default async function DashboardPage() {
         </div>
     )
 }
+

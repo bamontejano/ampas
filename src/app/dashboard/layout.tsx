@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { logout } from '@/app/auth/actions'
 import {
     Home,
@@ -26,14 +27,26 @@ export default async function DashboardLayout({
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/auth/login')
 
-    const { data: profileRaw } = await supabase
+    const { data: profileRaw, error: profileError } = await supabase
         .from('profiles')
         .select('*, ampas(*)')
-        .eq('id', user?.id as string)
+        .eq('id', user.id)
         .single()
 
+    if (profileError || !profileRaw) {
+        // Fallback for missing profile
+        redirect('/auth/login')
+    }
+
     const profile = profileRaw as any
+
+    // REDIRECT IF ONBOARDING NOT COMPLETED
+    if (!profile.onboarding_completado) {
+        redirect('/onboarding')
+    }
+
     const ampa = profile?.ampas
 
     // Fetch notifications
