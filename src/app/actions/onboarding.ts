@@ -13,66 +13,23 @@ export async function redeemInvitation(formData: FormData) {
     const codigo = formData.get('codigo') as string
     if (!codigo) throw new Error('Código no proporcionado')
 
-    // 1. Find the invitation
-    const { data: invitation, error: fetchError } = await supabase
-        .from('invitaciones')
-        .select('*')
-        .eq('codigo', codigo.trim().toUpperCase())
-        .single()
+    // 1. Procesar todo en una sola transacción atómica via RPC
+    const { data: res, error: rpcError } = await supabase.rpc('procesar_registro_con_invitacion', {
+        p_codigo: codigo,
+        p_user_id: user.id,
+        p_nombre_completo: null // Ya tiene nombre en el perfil
+    })
 
-    if (fetchError || !invitation) {
-        throw new Error('Código de invitación no válido o inexistente')
+    if (rpcError || !res.success) {
+        throw new Error(rpcError?.message || res.error || 'Error al validar el código')
     }
 
-    // 2. Check if already used
-    if (invitation.usado) {
-        throw new Error('Este código ya ha sido utilizado')
-    }
-
-    // 3. (Optional) Check expiration
-    if (invitation.expira_at && new Date(invitation.expira_at) < new Date()) {
-        throw new Error('Este código ha expirado')
-    }
-
-    // 4. Atomic transaction (best effort with Supabase)
-    // First, mark invitation as used
-    const { error: useError } = await supabase
-        .from('invitaciones')
-        .update({
-            usado: true,
-            usado_por: user.id
-        })
-        .eq('id', invitation.id)
-
-    if (useError) throw new Error('Error al procesar la invitación')
-
-    // Second, update user profile
-    const isAdminCode = invitation.codigo.startsWith('ADMIN-')
-    const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-            ampa_id: invitation.ampa_id,
-            onboarding_completado: true,
-            ...(isAdminCode ? { rol: 'admin_ampa' } : {}) // Auto-assign admin if code is ADMIN-
-        })
-        .eq('id', user.id)
-
-    if (profileError) {
-        // Rollback invitation usage (minimal effort)
-        await supabase
-            .from('invitaciones')
-            .update({ usado: false, usado_por: null })
-            .eq('id', invitation.id)
-
-        throw new Error('Error al actualizar el perfil')
-    }
-
-    // 5. NOTIFICAR A LOS ADMINS DEL AMPA
+    // 2. Notificar al AMPA del nuevo ingreso
     const { data: userData } = await supabase.from('profiles').select('nombre_completo').eq('id', user.id).single()
 
-    await sendNotificationToAMPA(invitation.ampa_id, {
-        titulo: 'Nuevo miembro en la comunidad',
-        contenido: `${userData?.nombre_completo || 'Un nuevo usuario'} se ha unido al AMPA usando un código.`,
+    await sendNotificationToAMPA(res.ampa_id, {
+        titulo: res.es_admin ? 'Nuevo Administrador asignado' : 'Nuevo miembro en la comunidad',
+        contenido: `${userData?.nombre_completo || 'Un nuevo usuario'} se ha unido al AMPA.`,
         tipo: 'comunidad',
         enlace: '/dashboard/admin/usuarios'
     })

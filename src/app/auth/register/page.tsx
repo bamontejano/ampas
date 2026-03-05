@@ -110,7 +110,8 @@ export default function RegisterPage() {
                                     name="codigo_invitacion"
                                     type="text"
                                     className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all uppercase font-mono tracking-widest"
-                                    placeholder="ABCDEF"
+                                    placeholder="ADMIN-XJ72P9"
+                                    maxLength={15}
                                 />
                                 <p className="mt-1 text-[10px] text-slate-400 font-medium px-1">
                                     Si no tienes código, podrás entrar como invitado y añadirlo más tarde.

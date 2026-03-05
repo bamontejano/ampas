@@ -110,3 +110,131 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE notificaciones;
   END IF;
 END $$;
+
+-- ─── RPCs: INVITACIONES (Bypass RLS) ─────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION get_invitacion_by_codigo(p_codigo text)
+RETURNS json AS $$
+DECLARE
+    result json;
+BEGIN
+    SELECT row_to_json(i) INTO result
+    FROM invitaciones i
+    WHERE UPPER(i.codigo) = UPPER(p_codigo);
+    
+    RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grants para que el RPC sea accesible (especialmente por anon durante registro)
+GRANT EXECUTE ON FUNCTION get_invitacion_by_codigo(text) TO anon, authenticated, postgres;
+GRANT EXECUTE ON FUNCTION usar_invitacion(uuid, uuid) TO anon, authenticated, postgres;
+GRANT EXECUTE ON FUNCTION liberar_invitacion(uuid) TO anon, authenticated, postgres;
+
+CREATE OR REPLACE FUNCTION usar_invitacion(p_id uuid, p_user_id uuid)
+RETURNS void AS $$
+BEGIN
+    UPDATE invitaciones
+    SET usado = true, usado_por = p_user_id
+    WHERE id = p_id AND usado = false;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION procesar_registro_con_invitacion(
+    p_codigo text,
+    p_user_id uuid,
+    p_nombre_completo text
+)
+RETURNS json AS $$
+DECLARE
+    v_invitacion record;
+    v_es_admin boolean;
+BEGIN
+    -- 1. Buscar la invitación (insensible a mayúsculas/minúsculas)
+    SELECT * INTO v_invitacion
+    FROM invitaciones
+    WHERE UPPER(codigo) = UPPER(TRIM(p_codigo))
+    LIMIT 1;
+
+    -- 2. Validaciones
+    IF v_invitacion IS NULL THEN
+        RETURN json_build_object('success', false, 'error', 'Código de invitación no válido o inexistente');
+    END IF;
+
+    IF v_invitacion.usado THEN
+        RETURN json_build_object('success', false, 'error', 'Este código de invitación ya ha sido utilizado');
+    END IF;
+
+    IF v_invitacion.expira_at IS NOT NULL AND v_invitacion.expira_at < now() THEN
+        RETURN json_build_object('success', false, 'error', 'Este código de invitación ha expirado');
+    END IF;
+
+    -- 3. Determinar si es un código de administrador
+    v_es_admin := v_invitacion.codigo LIKE 'ADMIN-%';
+
+    -- 4. Actualizar el perfil (SECURITY DEFINER para saltar RLS temporalmente aquí)
+    UPDATE profiles
+    SET 
+        ampa_id = v_invitacion.ampa_id,
+        onboarding_completado = true,
+        nombre_completo = COALESCE(p_nombre_completo, nombre_completo),
+        rol = CASE WHEN v_es_admin THEN 'admin_ampa'::rol_usuario ELSE rol END
+    WHERE id = p_user_id;
+
+    -- 5. Marcar invitación como usada
+    UPDATE invitaciones
+    SET 
+        usado = true,
+        usado_por = p_user_id
+    WHERE id = v_invitacion.id;
+
+    RETURN json_build_object(
+        'success', true, 
+        'ampa_id', v_invitacion.ampa_id,
+        'es_admin', v_es_admin
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION procesar_registro_con_invitacion(text, uuid, text) TO anon, authenticated, postgres;
+
+CREATE OR REPLACE FUNCTION liberar_invitacion(p_id uuid)
+RETURNS void AS $$
+BEGIN
+    UPDATE invitaciones
+    SET usado = false, usado_por = null
+    WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ─── CASCADA PARA ELIMINACIÓN DE AMPAs ───────────────────────────────────────
+
+-- Ajustar profiles (ampa_id)
+ALTER TABLE profiles 
+DROP CONSTRAINT IF EXISTS profiles_ampa_id_fkey,
+ADD CONSTRAINT profiles_ampa_id_fkey 
+FOREIGN KEY (ampa_id) REFERENCES ampas(id) ON DELETE CASCADE;
+
+-- Ajustar invitaciones (ampa_id)
+ALTER TABLE invitaciones 
+DROP CONSTRAINT IF EXISTS invitaciones_ampa_id_fkey,
+ADD CONSTRAINT invitaciones_ampa_id_fkey 
+FOREIGN KEY (ampa_id) REFERENCES ampas(id) ON DELETE CASCADE;
+
+-- Ajustar posts (ampa_id)
+ALTER TABLE posts 
+DROP CONSTRAINT IF EXISTS posts_ampa_id_fkey,
+ADD CONSTRAINT posts_ampa_id_fkey 
+FOREIGN KEY (ampa_id) REFERENCES ampas(id) ON DELETE CASCADE;
+
+-- Ajustar recursos (ampa_id)
+ALTER TABLE recursos 
+DROP CONSTRAINT IF EXISTS recursos_ampa_id_fkey,
+ADD CONSTRAINT recursos_ampa_id_fkey 
+FOREIGN KEY (ampa_id) REFERENCES ampas(id) ON DELETE CASCADE;
+
+-- Ajustar eventos (ampa_id)
+ALTER TABLE eventos 
+DROP CONSTRAINT IF EXISTS eventos_ampa_id_fkey,
+ADD CONSTRAINT eventos_ampa_id_fkey 
+FOREIGN KEY (ampa_id) REFERENCES ampas(id) ON DELETE CASCADE;

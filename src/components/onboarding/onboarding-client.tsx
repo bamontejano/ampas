@@ -23,6 +23,8 @@ export default function OnboardingClient() {
             try {
                 await redeemInvitation(formData)
             } catch (err: any) {
+                // Si es un redirect de Next.js, lo dejamos pasar para que funcione la navegación
+                if (err.message === 'NEXT_REDIRECT') return
                 setError(err.message)
             }
         })
@@ -34,6 +36,7 @@ export default function OnboardingClient() {
             try {
                 await skipOnboarding()
             } catch (err: any) {
+                if (err.message === 'NEXT_REDIRECT') return
                 setError(err.message)
             }
         })
@@ -121,7 +124,7 @@ export default function OnboardingClient() {
                                 </button>
                                 <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Introduce tu código</h2>
                                 <p className="text-md text-slate-500 font-medium">
-                                    Escribe el código de 6 caracteres que has recibido por email o de parte de tu AMPA.
+                                    Escribe el código de invitación que has recibido por email o de parte de tu AMPA.
                                 </p>
                             </div>
 
@@ -132,9 +135,9 @@ export default function OnboardingClient() {
                                         name="codigo"
                                         autoFocus
                                         required
-                                        maxLength={6}
-                                        placeholder="EJ: XJ72P9"
-                                        className="w-full h-20 text-center text-3xl font-black tracking-[0.4em] uppercase rounded-3xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all placeholder:text-slate-200"
+                                        maxLength={20}
+                                        placeholder="EJ: ADMIN-XJ72P9"
+                                        className="w-full h-20 text-center text-xl font-black tracking-normal uppercase rounded-3xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all placeholder:text-slate-200"
                                     />
                                     <div className="absolute inset-0 rounded-3xl bg-indigo-600/5 opacity-0 group-focus-within:opacity-100 -z-10 blur-xl transition-all"></div>
                                 </div>

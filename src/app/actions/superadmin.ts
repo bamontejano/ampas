@@ -26,35 +26,39 @@ async function requireSuperadmin() {
 // ─── Create a new AMPA ────────────────────────────────────────────────────────
 
 export async function createAmpa(formData: FormData): Promise<void> {
-    const { supabase } = await requireSuperadmin()
+    try {
+        const { supabase } = await requireSuperadmin()
 
-    const nombre = formData.get('nombre') as string
-    const colegioNombre = formData.get('colegio_nombre') as string
-    const ciudad = formData.get('ciudad') as string
-    const plan = (formData.get('plan') as string) || 'basico'
+        const nombre = formData.get('nombre') as string
+        const colegioNombre = formData.get('colegio_nombre') as string
+        const ciudad = formData.get('ciudad') as string
+        const plan = (formData.get('plan') as string) || 'basico'
 
-    if (!nombre?.trim()) throw new Error('El nombre del AMPA es obligatorio')
+        if (!nombre?.trim()) throw new Error('El nombre del AMPA es obligatorio')
 
-    // Generate a URL-safe slug from name
-    const slug = nombre
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
+        // Generate a URL-safe slug from name
+        const slug = nombre
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
 
-    const { error } = await supabase.from('ampas').insert({
-        nombre: nombre.trim(),
-        slug,
-        colegio_nombre: colegioNombre?.trim() || null,
-        ciudad: ciudad?.trim() || null,
-        plan: plan as 'basico' | 'estandar' | 'premium',
-        activo: true,
-    })
+        const { error } = await supabase.from('ampas').insert({
+            nombre: nombre.trim(),
+            slug,
+            colegio_nombre: colegioNombre?.trim() || null,
+            ciudad: ciudad?.trim() || null,
+            plan: plan as 'basico' | 'estandar' | 'premium',
+            activo: true,
+        })
 
-    if (error) throw new Error(error.message)
+        if (error) throw new Error(error.message)
 
-    revalidatePath('/dashboard/superadmin/ampas')
+        revalidatePath('/dashboard/superadmin/ampas')
+    } catch (err: any) {
+        throw new Error(err.message || 'Error inesperado')
+    }
 }
 
 // ─── Toggle AMPA active/inactive ─────────────────────────────────────────────
