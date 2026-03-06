@@ -42,8 +42,8 @@ export default async function DashboardLayout({
 
     const profile = profileRaw as any
 
-    // REDIRECT IF ONBOARDING NOT COMPLETED
-    if (!profile.onboarding_completado) {
+    // REDIRECT IF ONBOARDING NOT COMPLETED (Solo si no tiene ni el check ni una AMPA asignada)
+    if (!profile.onboarding_completado && !profile.ampa_id) {
         redirect('/onboarding')
     }
 

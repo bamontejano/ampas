@@ -8,14 +8,14 @@ export default async function OnboardingPage() {
 
     if (!user) redirect('/auth/login')
 
-    // Optional: check if already completed and redirect
+    // Si ya tiene el onboarding hecho O ya tiene un ampa_id (del registro), ir al dashboard
     const { data: profile } = await supabase
         .from('profiles')
-        .select('onboarding_completado')
+        .select('onboarding_completado, ampa_id')
         .eq('id', user.id)
         .maybeSingle()
 
-    if (profile?.onboarding_completado) {
+    if (profile?.onboarding_completado || profile?.ampa_id) {
         redirect('/dashboard')
     }
 
