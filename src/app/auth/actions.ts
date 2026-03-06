@@ -12,13 +12,49 @@ export async function login(formData: FormData) {
         password: formData.get('password') as string,
     }
 
-    const { error } = await supabase.auth.signInWithPassword(data)
+    const { data: authData, error } = await supabase.auth.signInWithPassword(data)
 
     if (error) {
         return { error: error.message }
     }
 
     revalidatePath('/', 'layout')
+
+    if (authData?.user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('rol')
+            .eq('id', authData.user.id)
+            .maybeSingle()
+
+        let userRol = profile?.rol
+
+        // Failsafe: Si el RPC estaba desactualizado y el rol se quedó en familia,
+        // comprobamos si usaron un código ADMIN- y les damos el rol correcto.
+        if (userRol === 'familia') {
+            const { data: invite } = await supabase
+                .from('invitaciones')
+                .select('codigo')
+                .eq('usado_por', authData.user.id)
+                .like('codigo', 'ADMIN-%')
+                .limit(1)
+                .maybeSingle()
+
+            if (invite) {
+                await supabase.from('profiles').update({ rol: 'admin_ampa' }).eq('id', authData.user.id)
+                userRol = 'admin_ampa'
+            }
+        }
+
+        if (userRol === 'admin_ampa' || userRol === 'junta') {
+            redirect('/dashboard/admin')
+        }
+
+        if (userRol === 'superadmin') {
+            redirect('/dashboard/superadmin/ampas')
+        }
+    }
+
     redirect('/dashboard')
 }
 

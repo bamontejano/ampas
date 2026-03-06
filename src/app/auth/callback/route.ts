@@ -19,11 +19,29 @@ export async function GET(request: Request) {
                     .eq('id', user.id)
                     .maybeSingle()
 
-                if (profile?.rol === 'admin_ampa' || profile?.rol === 'junta') {
+                let userRol = profile?.rol
+
+                // Failsafe: if RPC failed to assign admin_ampa role
+                if (userRol === 'familia') {
+                    const { data: invite } = await supabase
+                        .from('invitaciones')
+                        .select('codigo')
+                        .eq('usado_por', user.id)
+                        .like('codigo', 'ADMIN-%')
+                        .limit(1)
+                        .maybeSingle()
+
+                    if (invite) {
+                        await supabase.from('profiles').update({ rol: 'admin_ampa' }).eq('id', user.id)
+                        userRol = 'admin_ampa'
+                    }
+                }
+
+                if (userRol === 'admin_ampa' || userRol === 'junta') {
                     return NextResponse.redirect(`${origin}/dashboard/admin`)
                 }
 
-                if (profile?.rol === 'superadmin') {
+                if (userRol === 'superadmin') {
                     return NextResponse.redirect(`${origin}/dashboard/superadmin/ampas`)
                 }
             }
