@@ -43,6 +43,12 @@ export async function redeemInvitation(formData: FormData) {
     }
 
     revalidatePath('/', 'layout')
+
+    // Si el código era de admin, redirigir al panel de gestión de AMPA
+    if (res && res.es_admin) {
+        redirect('/dashboard/admin')
+    }
+
     redirect('/dashboard')
 }
 

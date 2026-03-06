@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { toggleAmpaStatus, deleteAmpa, generateAdminCode } from '@/app/actions/superadmin'
-import { PowerOff, Power, Trash2, Loader2, KeyRound } from 'lucide-react'
+import { PowerOff, Power, Trash2, Loader2, KeyRound, Copy } from 'lucide-react'
 
 interface AmpaActionsProps {
     ampaId: string
@@ -71,7 +71,7 @@ export function AmpaActions({ ampaId, isActive }: AmpaActionsProps) {
                         navigator.clipboard.writeText(adminCode)
                         setAdminCode(null)
                     }} className="text-indigo-400 hover:text-indigo-600" title="Copiar y cerrar">
-                        <Trash2 className="h-3 w-3" />
+                        <Copy className="h-3 w-3" />
                     </button>
                 </div>
             ) : (

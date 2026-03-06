@@ -8,23 +8,26 @@ export async function GET(request: Request) {
 
     if (code) {
         const supabase = await createClient()
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
-        if (!error) {
-            /* 
-            // Eliminamos la comprobación de onboarding para evitar bucles
-            if (user) {
+        if (!error && user) {
+            // Comprobar el rol del usuario para redirigir apropiadamente si no se especificó un destino (next)
+            if (next === '/dashboard') {
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('onboarding_completado, ampa_id')
+                    .select('rol')
                     .eq('id', user.id)
                     .maybeSingle()
 
-                if (!profile || !profile.onboarding_completado || !profile.ampa_id) {
-                    return NextResponse.redirect(`${origin}/onboarding`)
+                if (profile?.rol === 'admin_ampa' || profile?.rol === 'junta') {
+                    return NextResponse.redirect(`${origin}/dashboard/admin`)
+                }
+
+                if (profile?.rol === 'superadmin') {
+                    return NextResponse.redirect(`${origin}/dashboard/superadmin/ampas`)
                 }
             }
-            */
+
             return NextResponse.redirect(`${origin}${next}`)
         }
     }

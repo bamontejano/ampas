@@ -36,6 +36,7 @@ export default async function DashboardPage() {
     const profile = profileRaw as unknown as ProfileWithAmpa
     const rol = profile?.rol || 'familia'
     const isSuperadmin = rol === 'superadmin'
+    const isAmpaAdmin = rol === 'admin_ampa' || rol === 'junta'
 
     // Fetch real posts from Supabase (Only if has ampa_id or is superadmin)
     let posts: any[] = []
@@ -95,11 +96,17 @@ export default async function DashboardPage() {
                         }
                     </p>
 
-                    {isSuperadmin && (
+                    {(isSuperadmin || isAmpaAdmin) && (
                         <div className="flex gap-3 pt-2">
-                            <Link href="/dashboard/superadmin/ampas" className="bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition-all">
-                                Gestionar AMPAs
-                            </Link>
+                            {isSuperadmin ? (
+                                <Link href="/dashboard/superadmin/ampas" className="bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition-all">
+                                    Gestionar Plataforma
+                                </Link>
+                            ) : (
+                                <Link href="/dashboard/admin" className="bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition-all">
+                                    Panel de Gestión
+                                </Link>
+                            )}
                         </div>
                     )}
                 </div>
