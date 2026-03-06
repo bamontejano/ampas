@@ -11,8 +11,8 @@ export async function GET(request: Request) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (!error) {
-            // Verificar si el perfil tiene onboarding completado
-            const { data: { user } } = await supabase.auth.getUser()
+            /* 
+            // Eliminamos la comprobación de onboarding para evitar bucles
             if (user) {
                 const { data: profile } = await supabase
                     .from('profiles')
@@ -24,6 +24,7 @@ export async function GET(request: Request) {
                     return NextResponse.redirect(`${origin}/onboarding`)
                 }
             }
+            */
             return NextResponse.redirect(`${origin}${next}`)
         }
     }

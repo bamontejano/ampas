@@ -8,16 +8,7 @@ export default async function OnboardingPage() {
 
     if (!user) redirect('/auth/login')
 
-    // Si ya tiene el onboarding hecho O ya tiene un ampa_id (del registro), ir al dashboard
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completado, ampa_id')
-        .eq('id', user.id)
-        .maybeSingle()
-
-    if (profile?.onboarding_completado || profile?.ampa_id) {
-        redirect('/dashboard')
-    }
-
-    return <OnboardingClient />
+    // La pantalla de onboarding ha sido eliminada a petición del usuario.
+    // Redirigimos siempre al dashboard.
+    redirect('/dashboard')
 }
