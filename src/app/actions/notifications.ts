@@ -37,11 +37,15 @@ export async function sendNotificationToAMPA(ampaId: string, data: {
 }) {
     const supabase: any = await createClient()
 
-    // Get all profiles in this AMPA
+    // Si no hay ampaId, no hay a quién notificar
+    if (!ampaId) return
+
+    // Get all admin/junta profiles in this AMPA to notify them
     const { data: profiles } = await supabase
         .from('profiles')
         .select('id')
         .eq('ampa_id', ampaId)
+        .in('rol', ['admin_ampa', 'junta'])
 
     if (!profiles || profiles.length === 0) return
 

@@ -23,9 +23,11 @@ export default function OnboardingClient() {
             try {
                 await redeemInvitation(formData)
             } catch (err: any) {
-                // Si es un redirect de Next.js, lo dejamos pasar para que funcione la navegación
-                if (err.message === 'NEXT_REDIRECT') return
-                setError(err.message)
+                // Next.js redirect errors have a digest or message with NEXT_REDIRECT
+                if (err.digest?.includes('NEXT_REDIRECT')) {
+                    throw err;
+                }
+                setError(err.message || 'Error al validar el código')
             }
         })
     }
@@ -36,8 +38,10 @@ export default function OnboardingClient() {
             try {
                 await skipOnboarding()
             } catch (err: any) {
-                if (err.message === 'NEXT_REDIRECT') return
-                setError(err.message)
+                if (err.digest?.includes('NEXT_REDIRECT')) {
+                    throw err;
+                }
+                setError(err.message || 'Error al omitir el paso')
             }
         })
     }

@@ -88,7 +88,7 @@ export default function SocialPostCompose({ userAvatar, userName }: { userAvatar
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         onFocus={() => setIsExpanded(true)}
-                        placeholder={`¿Qué tienes en mente, ${userName.split(' ')[0]}?`}
+                        placeholder={`¿Qué tienes en mente, ${userName?.split(' ')?.[0] || 'Usuario'}?`}
                         rows={isExpanded ? 3 : 1}
                         className="w-full resize-none border-none bg-transparent p-0 text-slate-900 placeholder:text-slate-400 focus:ring-0 text-lg font-medium leading-relaxed"
                     />

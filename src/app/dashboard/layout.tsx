@@ -33,11 +33,11 @@ export default async function DashboardLayout({
         .from('profiles')
         .select('*, ampas(*)')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
     if (profileError || !profileRaw) {
-        // Fallback for missing profile
-        redirect('/auth/login')
+        // Redirigir si no hay sesión real o el perfil no existe
+        return redirect('/auth/login')
     }
 
     const profile = profileRaw as any

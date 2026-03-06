@@ -18,9 +18,9 @@ export async function GET(request: Request) {
                     .from('profiles')
                     .select('onboarding_completado, ampa_id')
                     .eq('id', user.id)
-                    .single()
+                    .maybeSingle()
 
-                if (!profile?.onboarding_completado || !profile?.ampa_id) {
+                if (!profile || !profile.onboarding_completado || !profile.ampa_id) {
                     return NextResponse.redirect(`${origin}/onboarding`)
                 }
             }

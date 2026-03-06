@@ -31,7 +31,7 @@ export default async function DashboardPage() {
         .from('profiles')
         .select('*, ampas(*)')
         .eq('id', user?.id as string)
-        .single()
+        .maybeSingle()
 
     const profile = profileRaw as unknown as ProfileWithAmpa
     const rol = profile?.rol || 'familia'
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                     <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-md border border-white/10">
                         {isSuperadmin ? 'Plataforma Global' : (profile?.ampas?.nombre || 'Miembro')}
                     </div>
-                    <h2 className="text-4xl font-black tracking-tighter text-white">¡Hola, {profile?.nombre_completo?.split(' ')[0]}! 👋</h2>
+                    <h2 className="text-4xl font-black tracking-tighter text-white">¡Hola, {profile?.nombre_completo?.split(' ')?.[0] || 'Usuario'}! 👋</h2>
                     <p className="max-w-md text-indigo-100 font-medium leading-relaxed">
                         {isSuperadmin
                             ? 'Tienes acceso total a la configuración de la plataforma y gestión de todas las AMPAs.'
