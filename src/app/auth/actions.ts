@@ -91,12 +91,17 @@ export async function register(formData: FormData) {
     }
 
     // 2. Si el código es válido, procedemos con el registro en Auth
+    // IMPORTANTE: El perfil se crea en la BD mediante un trigger al confirmar el email,
+    // por eso NO podemos llamar al RPC aquí. Guardamos el código en user_metadata
+    // para procesarlo en el callback tras la confirmación.
     const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
                 nombre_completo: nombre,
+                // Guardamos el código para procesarlo en el callback post-confirmación
+                codigo_invitacion: codigoInvitacion?.trim().toUpperCase() || null,
             },
             emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
         },
@@ -108,20 +113,6 @@ export async function register(formData: FormData) {
 
     if (!authData.user) {
         return { error: 'No se pudo crear la cuenta. Inténtalo de nuevo.' }
-    }
-
-    // 3. Vincular el perfil si hubo invitación consumiendo la nueva RPC atómica
-    if (codigoInvitacion) {
-        const { data: res, error: rpcError } = await supabase.rpc('procesar_registro_con_invitacion', {
-            p_codigo: codigoInvitacion,
-            p_user_id: authData.user.id,
-            p_nombre_completo: nombre
-        })
-
-        if (rpcError || !res.success) {
-            console.error('Error procesando invitación en registro:', rpcError || res.error)
-            // No bloqueamos el registro, pero el usuario tendrá que completar el onboarding
-        }
     }
 
     return { success: true, message: '¡Cuenta creada! Revisa tu email para confirmar tu cuenta y empezar.' }
