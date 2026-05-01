@@ -99,7 +99,7 @@ export default function NewEventPage() {
         <div className="max-w-4xl mx-auto pb-20">
             <Link
                 href="/dashboard/eventos"
-                className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors mb-8 font-medium group"
+                className="inline-flex items-center gap-2 text-slate-500 hover:text-brand transition-colors mb-8 font-medium group"
             >
                 <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 Volver al calendario
@@ -107,7 +107,7 @@ export default function NewEventPage() {
 
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                 <div>
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black uppercase tracking-widest mb-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand/10 text-brand text-xs font-black uppercase tracking-widest mb-4">
                         <Sparkles className="h-3 w-3" /> Panel de Gestión
                     </div>
                     <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Crear Nuevo Evento</h1>
@@ -132,7 +132,7 @@ export default function NewEventPage() {
                     <div className="space-y-8 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50">
                         <div className="space-y-6">
                             <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
+                                <div className="h-10 w-10 rounded-2xl bg-brand text-white flex items-center justify-center shadow-lg shadow-brand/10">
                                     <Type className="h-5 w-5" />
                                 </div>
                                 Detalles Básicos
@@ -164,7 +164,7 @@ export default function NewEventPage() {
                                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Imagen del Evento</label>
 
                                 {imagePreview ? (
-                                    <div className="relative rounded-[2rem] overflow-hidden border-2 border-indigo-100 shadow-lg">
+                                    <div className="relative rounded-[2rem] overflow-hidden border-2 border-brand/10 shadow-lg">
                                         <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
                                         <button
                                             type="button"
@@ -196,7 +196,7 @@ export default function NewEventPage() {
                                 />
 
                                 <div className="relative group">
-                                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+                                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-brand transition-colors" />
                                     <input
                                         name="imagen_url"
                                         type="url"
@@ -251,7 +251,7 @@ export default function NewEventPage() {
                             <div className="space-y-2">
                                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Lugar / Link</label>
                                 <div className="relative group">
-                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-brand transition-colors" />
                                     <input
                                         required
                                         name="lugar"
@@ -308,7 +308,7 @@ export default function NewEventPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-3 rounded-[1.5rem] bg-indigo-600 px-12 py-5 text-sm font-black text-white transition-all hover:bg-indigo-700 shadow-2xl shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-3 rounded-[1.5rem] bg-brand px-12 py-5 text-sm font-black text-white transition-all hover:bg-indigo-700 shadow-2xl shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <>

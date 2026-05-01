@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
-    const supabase: any = await createClient()
+    const supabase = await createClient()
 
     const data = {
         email: formData.get('email') as string,
@@ -23,35 +23,36 @@ export async function login(formData: FormData) {
     if (authData?.user) {
         const { data: profile } = await supabase
             .from('profiles')
-            .select('rol')
+            .select('rol, onboarding_completado, ampa_id')
             .eq('id', authData.user.id)
             .maybeSingle()
 
         let userRol = profile?.rol
+        const onboardingCompletado = profile?.onboarding_completado
+        const codigoInvitacion = authData.user.user_metadata?.codigo_invitacion
 
-        // Failsafe: Si el RPC estaba desactualizado y el rol se quedó en familia,
-        // comprobamos si usaron un código ADMIN- y les damos el rol correcto.
-        if (userRol === 'familia') {
-            const { data: invite } = await supabase
-                .from('invitaciones')
-                .select('codigo')
-                .eq('usado_por', authData.user.id)
-                .like('codigo', 'ADMIN-%')
-                .limit(1)
-                .maybeSingle()
+        // Failsafe: Procesar código de invitación SOLO si el usuario no tiene AMPA vinculada
+        // Esto evita que códigos antiguos en metadata sobreescriban roles actuales.
+        if (codigoInvitacion && !profile?.ampa_id) {
+            const { data: rpcResult, error: rpcError } = await supabase.rpc(
+                'procesar_registro_con_invitacion',
+                {
+                    p_codigo: codigoInvitacion,
+                    p_user_id: authData.user.id,
+                    p_nombre_completo: authData.user.user_metadata?.nombre_completo || null,
+                    p_email: authData.user.email || null,
+                }
+            )
 
-            if (invite) {
-                await supabase.from('profiles').update({ rol: 'admin_ampa' }).eq('id', authData.user.id)
-                userRol = 'admin_ampa'
+            if (rpcError) {
+                console.error('Error rescatando invitación en login:', rpcError)
+            } else if (rpcResult?.success) {
+                userRol = rpcResult.rol_asignado || (rpcResult.es_admin ? 'admin' : 'user')
             }
         }
 
-        if (userRol === 'admin_ampa' || userRol === 'junta') {
+        if (userRol === 'admin') {
             redirect('/dashboard/admin')
-        }
-
-        if (userRol === 'superadmin') {
-            redirect('/dashboard/superadmin/ampas')
         }
     }
 
@@ -59,7 +60,7 @@ export async function login(formData: FormData) {
 }
 
 export async function register(formData: FormData) {
-    const supabase: any = await createClient()
+    const supabase = await createClient()
 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
@@ -115,18 +116,38 @@ export async function register(formData: FormData) {
         return { error: 'No se pudo crear la cuenta. Inténtalo de nuevo.' }
     }
 
+    // Procesamiento INMEDIATO del código (Esperamos 2.5s para asegurar que el trigger DB haya creado el perfil)
+    // Usamos el RPC porque es SECURITY DEFINER; las llamadas directas .update() fallarían por RLS
+    if (codigoInvitacion) {
+        await new Promise(resolve => setTimeout(resolve, 2500))
+        
+        const { error: rpcError } = await supabase.rpc(
+            'procesar_registro_con_invitacion',
+            {
+                p_codigo: codigoInvitacion.trim().toUpperCase(),
+                p_user_id: authData.user.id,
+                p_nombre_completo: nombre,
+                p_email: email,
+            }
+        )
+
+        if (rpcError) {
+            console.error('Error procesando código inmediatamente tras registro:', rpcError)
+        }
+    }
+
     return { success: true, message: '¡Cuenta creada! Revisa tu email para confirmar tu cuenta y empezar.' }
 }
 
 export async function logout() {
-    const supabase: any = await createClient()
+    const supabase = await createClient()
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
     redirect('/auth/login')
 }
 
 export async function loginWithGoogle() {
-    const supabase: any = await createClient()
+    const supabase = await createClient()
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -145,7 +166,7 @@ export async function loginWithGoogle() {
 }
 
 export async function resetPassword(formData: FormData) {
-    const supabase: any = await createClient()
+    const supabase = await createClient()
     const email = formData.get('email') as string
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {

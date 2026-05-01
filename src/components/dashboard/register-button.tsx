@@ -98,7 +98,7 @@ export default function RegisterButton({ eventoId, isRegisteredInitial = false }
             <button
                 onClick={handleRegister}
                 disabled={isPending}
-                className={`w-full rounded-2xl bg-indigo-600 px-6 py-4 text-sm font-bold text-white transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 active:scale-[0.98] ${isPending ? 'opacity-70 cursor-not-allowed' : 'hover:bg-indigo-700'
+                className={`w-full rounded-2xl bg-brand px-6 py-4 text-sm font-bold text-white transition-all shadow-lg shadow-brand/10 flex items-center justify-center gap-2 active:scale-[0.98] ${isPending ? 'opacity-70 cursor-not-allowed' : 'hover:bg-indigo-700'
                     }`}
             >
                 {isPending ? (

@@ -118,7 +118,7 @@ export async function addReply(formData: FormData) {
     revalidatePath(`/dashboard/comunidad/foros/${categoryId}/${postId}`)
 }
 
-export async function createSocialPost(content: string, image_url?: string) {
+export async function createSocialPost(content: string, image_url?: string, video_url?: string, estado?: string, is_global: boolean = false) {
     const supabase: any = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -126,11 +126,11 @@ export async function createSocialPost(content: string, image_url?: string) {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('ampa_id')
+        .select('ampa_id, rol')
         .eq('id', user.id)
         .single()
 
-    if (!profile?.ampa_id) throw new Error('No tienes un AMPA asignado')
+    if (!profile?.ampa_id && profile?.rol !== 'admin') throw new Error('No tienes un AMPA asignado')
 
     const { error } = await supabase
         .from('posts')
@@ -139,6 +139,9 @@ export async function createSocialPost(content: string, image_url?: string) {
             ampa_id: profile.ampa_id as string,
             contenido: content,
             imagen_url: image_url || null,
+            video_url: video_url || null,
+            estado: estado || null,
+            is_global: is_global && profile.rol === 'admin',
             tipo: 'post',
             likes_count: 0,
             comentarios_count: 0

@@ -7,7 +7,9 @@ import {
     MessageCircle,
     Share2,
     MoreHorizontal,
-    Users
+    Users,
+    Video,
+    Globe
 } from 'lucide-react'
 import { formatDateRelative } from '@/lib/utils'
 import Link from 'next/link'
@@ -40,14 +42,13 @@ export default function RealtimeFeed({
             .on(
                 'postgres_changes',
                 {
-                    event: '*',
+                    event: 'INSERT',
                     schema: 'public',
                     table: 'posts',
-                    filter: `ampa_id=eq.${ampaId}`
                 },
                 async (payload) => {
-                    if (payload.eventType === 'INSERT') {
-                        // Fetch the full post with profile data for the new insert
+                    // Filter on client if it's for this AMPA or global
+                    if (payload.new.ampa_id === ampaId || payload.new.is_global) {
                         const { data: newPost } = await supabase
                             .from('posts')
                             .select('*, profiles:autor_id(nombre_completo, avatar_url, rol)')
@@ -57,7 +58,18 @@ export default function RealtimeFeed({
                         if (newPost) {
                             setPosts((prev) => [newPost, ...prev])
                         }
-                    } else if (payload.eventType === 'UPDATE') {
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'posts',
+                },
+                (payload) => {
+                    if (payload.new.ampa_id === ampaId || payload.new.is_global) {
                         setPosts((prev) => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
                     }
                 }
@@ -104,7 +116,7 @@ export default function RealtimeFeed({
                         <div className="p-8">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold border-2 border-white shadow-sm overflow-hidden group-hover:scale-105 transition-transform">
+                                    <div className="h-14 w-14 rounded-2xl bg-brand/10 flex items-center justify-center text-brand font-bold border-2 border-white shadow-sm overflow-hidden group-hover:scale-105 transition-transform">
                                         {avatar ? (
                                             <img src={avatar} alt={name} className="h-full w-full object-cover" />
                                         ) : (
@@ -112,11 +124,23 @@ export default function RealtimeFeed({
                                         )}
                                     </div>
                                     <div>
-                                        <h4 className="text-base font-black text-slate-900 leading-tight">{name}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-base font-black text-slate-900 leading-tight">{name}</h4>
+                                            {post.estado && (
+                                                <span className="text-xs bg-slate-50 px-2 py-0.5 rounded-full text-slate-500 font-bold border border-slate-100 flex items-center gap-1">
+                                                    {post.estado}
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">
-                                                {post.profiles?.rol === 'junta' ? 'Junta' : 'Familia'}
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand bg-brand/10 px-2 py-0.5 rounded-md">
+                                                {post.profiles?.rol === 'admin' ? 'admin' : 'user'}
                                             </span>
+                                            {post.is_global && (
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-violet-500 bg-violet-50 px-2 py-0.5 rounded-md flex items-center gap-1 border border-violet-100">
+                                                    <Globe className="w-2.5 h-2.5" /> Global
+                                                </span>
+                                            )}
                                             <span className="text-xs text-slate-400 font-medium">
                                                 {formatDateRelative(post.created_at)}
                                             </span>
@@ -136,6 +160,30 @@ export default function RealtimeFeed({
                                 {post.imagen_url && (
                                     <div className="rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
                                         <img src={post.imagen_url} alt="Post media" className="w-full h-auto object-cover max-h-[30rem]" />
+                                    </div>
+                                )}
+
+                                {post.video_url && (
+                                    <div className="rounded-[2rem] overflow-hidden border border-slate-100 bg-slate-900 aspect-video shadow-2xl relative group/video">
+                                        {post.video_url.includes('youtube.com') || post.video_url.includes('youtu.be') ? (
+                                            <iframe
+                                                className="w-full h-full"
+                                                src={`https://www.youtube.com/embed/${post.video_url.split('v=')[1]?.split('&')[0] || post.video_url.split('/').pop()}`}
+                                                allowFullScreen
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-white p-8 text-center space-y-4">
+                                                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md">
+                                                     <Video className="w-8 h-8 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black uppercase tracking-widest text-[10px] text-white/60">Contenido Multimedia</p>
+                                                    <a href={post.video_url} target="_blank" rel="noopener noreferrer" className="block mt-2 text-sm font-bold bg-white text-slate-900 px-6 py-2 rounded-xl hover:bg-brand/10 transition-colors">
+                                                        Ver Video Externo
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

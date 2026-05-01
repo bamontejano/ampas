@@ -44,7 +44,7 @@ export default function ReplyForm({ postId, categoryId }: ReplyFormProps) {
             )}
 
             <div className="flex gap-4">
-                <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-brand/20 flex items-center justify-center text-brand shrink-0">
                     <User className="h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-4">
@@ -53,13 +53,13 @@ export default function ReplyForm({ postId, categoryId }: ReplyFormProps) {
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="Escribe tu respuesta o consejo..."
-                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-indigo-200 focus:ring-0 transition-all text-slate-900 placeholder:text-slate-400 resize-none leading-relaxed"
+                        className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-brand/20 focus:ring-0 transition-all text-slate-900 placeholder:text-slate-400 resize-none leading-relaxed"
                         rows={4}
                     ></textarea>
                     <div className="flex justify-end">
                         <button
                             disabled={isPending || !content.trim()}
-                            className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="bg-brand text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-brand/10 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {isPending ? 'Enviando...' : (
                                 <>

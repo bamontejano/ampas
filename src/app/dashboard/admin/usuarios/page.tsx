@@ -11,13 +11,11 @@ import {
 } from 'lucide-react'
 import { UserRowActions, UserRoleBadge } from '@/components/dashboard/admin/user-row-actions'
 
-type Role = 'familia' | 'junta' | 'admin_ampa' | 'superadmin'
+type Role = 'user' | 'admin'
 
 const roleOrder: Record<Role, number> = {
-    admin_ampa: 0,
-    junta: 1,
-    familia: 2,
-    superadmin: -1,
+    admin: 0,
+    user: 1,
 }
 
 export default async function AdminUsuariosPage() {
@@ -34,7 +32,7 @@ export default async function AdminUsuariosPage() {
 
     const profile = profileRaw as any
 
-    if (!['admin_ampa', 'superadmin'].includes(profile?.rol || '')) {
+    if (profile?.rol !== 'admin') {
         redirect('/dashboard')
     }
 
@@ -51,9 +49,8 @@ export default async function AdminUsuariosPage() {
     miembros.sort((a, b) => (roleOrder[a.rol as Role] ?? 99) - (roleOrder[b.rol as Role] ?? 99))
 
     // Stats
-    const totalFamilias = miembros.filter(m => m.rol === 'familia').length
-    const totalJunta = miembros.filter(m => m.rol === 'junta').length
-    const totalAdmins = miembros.filter(m => ['admin_ampa', 'superadmin'].includes(m.rol)).length
+    const totalUsuarios = miembros.filter(m => m.rol === 'user').length
+    const totalAdmins = miembros.filter(m => m.rol === 'admin').length
     const totalSocios = miembros.filter(m => m.estado_suscripcion === 'activo').length
 
     return (
@@ -80,8 +77,7 @@ export default async function AdminUsuariosPage() {
                         {[
                             { label: 'Total miembros', value: miembros.length, icon: Users, bg: 'bg-white/20' },
                             { label: 'Socios Activos', value: totalSocios, icon: ShieldCheck, bg: 'bg-emerald-400/30' },
-                            { label: 'Junta', value: totalJunta, icon: ShieldCheck, bg: 'bg-white/15' },
-                            { label: 'Admins', value: totalAdmins, icon: Crown, bg: 'bg-white/15' },
+                            { label: 'Administradores', value: totalAdmins, icon: Crown, bg: 'bg-white/15' },
                         ].map(s => (
                             <div key={s.label} className={`flex items-center gap-3 ${s.bg} rounded-2xl px-5 py-3 backdrop-blur-md`}>
                                 <div className="text-center">
@@ -151,11 +147,9 @@ export default async function AdminUsuariosPage() {
                                         {/* Name + Avatar */}
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm border-2 border-white shadow-sm ${m.rol === 'admin_ampa' || m.rol === 'superadmin'
-                                                    ? 'bg-indigo-100 text-indigo-700'
-                                                    : m.rol === 'junta'
-                                                        ? 'bg-blue-100 text-blue-700'
-                                                        : 'bg-slate-100 text-slate-600'
+                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-sm border-2 border-white shadow-sm ${m.rol === 'admin'
+                                                    ? 'bg-brand/20 text-brand'
+                                                    : 'bg-slate-100 text-slate-600'
                                                     }`}>
                                                     {m.avatar_url ? (
                                                         <img src={m.avatar_url} alt={m.nombre_completo} className="h-10 w-10 rounded-full object-cover" />
@@ -215,24 +209,16 @@ export default async function AdminUsuariosPage() {
                 {[
                     {
                         icon: Crown,
-                        title: 'Admin AMPA',
-                        desc: 'Puede gestionar miembros, roles, invitaciones y configuración del AMPA.',
-                        color: 'text-indigo-600',
-                        bg: 'bg-indigo-50',
-                        border: 'border-indigo-100',
-                    },
-                    {
-                        icon: ShieldCheck,
-                        title: 'Junta',
-                        desc: 'Puede crear eventos, votaciones y comunicados. No puede gestionar roles.',
-                        color: 'text-blue-600',
-                        bg: 'bg-blue-50',
-                        border: 'border-blue-100',
+                        title: 'Administrador',
+                        desc: 'Control total: gestión de miembros, invitaciones y configuración del AMPA.',
+                        color: 'text-brand',
+                        bg: 'bg-brand/10',
+                        border: 'border-brand/10',
                     },
                     {
                         icon: Users,
-                        title: 'Familia',
-                        desc: 'Acceso estándar a la comunidad, recursos y eventos. No puede administrar.',
+                        title: 'Miembro',
+                        desc: 'Acceso estándar a la comunidad, recursos, eventos y votaciones.',
                         color: 'text-slate-600',
                         bg: 'bg-slate-50',
                         border: 'border-slate-200',

@@ -68,7 +68,7 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
     const getIcon = (tipo: string) => {
         switch (tipo) {
             case 'evento': return <Calendar className="h-4 w-4 text-emerald-500" />
-            case 'votacion': return <Vote className="h-4 w-4 text-indigo-500" />
+            case 'votacion': return <Vote className="h-4 w-4 text-brand" />
             case 'comunidad': return <Users className="h-4 w-4 text-amber-500" />
             default: return <Bell className="h-4 w-4 text-slate-400" />
         }
@@ -92,7 +92,7 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`relative p-2 rounded-xl transition-all ${isOpen ? 'bg-indigo-50 text-indigo-600' : 'text-slate-400 hover:text-indigo-600 hover:bg-slate-50'}`}
+                className={`relative p-2 rounded-xl transition-all ${isOpen ? 'bg-brand/10 text-brand' : 'text-slate-400 hover:text-brand hover:bg-slate-50'}`}
             >
                 <Bell className="w-6 h-6" />
                 {unreadCount > 0 && (
@@ -114,7 +114,7 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
                             {unreadCount > 0 && (
                                 <button
                                     onClick={handleMarkAllAsRead}
-                                    className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors"
+                                    className="text-[10px] font-black text-brand uppercase tracking-widest hover:text-brand transition-colors"
                                 >
                                     Marcar todas
                                 </button>
@@ -127,7 +127,7 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
                                     {notifications.map((n) => (
                                         <div
                                             key={n.id}
-                                            className={`p-5 hover:bg-slate-50/80 transition-colors relative group ${!n.leida ? 'bg-indigo-50/30' : ''}`}
+                                            className={`p-5 hover:bg-slate-50/80 transition-colors relative group ${!n.leida ? 'bg-brand/10/30' : ''}`}
                                         >
                                             <div className="flex gap-4">
                                                 <div className={`mt-1 h-10 w-10 shrink-0 rounded-2xl flex items-center justify-center shadow-sm ${!n.leida ? 'bg-white' : 'bg-slate-50'}`}>
@@ -152,7 +152,7 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
                                                                 setIsOpen(false)
                                                                 if (!n.leida) handleMarkAsRead(n.id)
                                                             }}
-                                                            className="inline-flex items-center gap-1 text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-2 hover:gap-2 transition-all"
+                                                            className="inline-flex items-center gap-1 text-[10px] font-black text-brand uppercase tracking-widest mt-2 hover:gap-2 transition-all"
                                                         >
                                                             Ver detalle <ChevronRight className="h-3 w-3" />
                                                         </Link>
@@ -162,7 +162,7 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
                                             {!n.leida && (
                                                 <button
                                                     onClick={() => handleMarkAsRead(n.id)}
-                                                    className="absolute top-5 right-5 h-2 w-2 rounded-full bg-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="absolute top-5 right-5 h-2 w-2 rounded-full bg-brand opacity-0 group-hover:opacity-100 transition-opacity"
                                                     title="Marcar como leída"
                                                 />
                                             )}

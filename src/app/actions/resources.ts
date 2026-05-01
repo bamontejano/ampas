@@ -15,7 +15,7 @@ export async function createResource(formData: FormData) {
         .eq('id', user.id)
         .single()
 
-    if (!profile || (profile.rol !== 'admin_ampa' && profile.rol !== 'junta' && profile.rol !== 'superadmin')) {
+    if (!profile || profile.rol !== 'admin') {
         throw new Error('No tienes permisos para crear recursos')
     }
 

@@ -24,7 +24,7 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
         .eq('id', user?.id as string)
         .single()
 
-    if (!profile || (profile.rol !== 'junta' && profile.rol !== 'admin_ampa')) {
+    if (!profile || (profile.rol !== 'admin' && profile.rol !== 'admin')) {
         redirect('/dashboard/eventos')
     }
 
@@ -115,7 +115,7 @@ export default async function EventAttendeesPage({ params }: { params: { id: str
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${attendee.rol === 'junta' || attendee.rol === 'admin_ampa'
+                                            <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${attendee.rol === 'admin' || attendee.rol === 'admin'
                                                     ? 'bg-amber-50 text-amber-600'
                                                     : 'bg-slate-100 text-slate-500'
                                                 }`}>

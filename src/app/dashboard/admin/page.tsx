@@ -52,8 +52,8 @@ export default async function AdminPage() {
 
     const profile = profileRaw as unknown as ProfileWithAmpa
 
-    // Solo junta o admins pueden ver esto
-    if (profile?.rol === 'familia') {
+    // Solo administradores pueden ver esto
+    if (profile?.rol === 'user') {
         redirect('/dashboard')
     }
 
@@ -91,7 +91,7 @@ export default async function AdminPage() {
                     <p className="text-slate-500">Control de comunidad para {profile?.ampas?.nombre}</p>
                 </div>
                 <form action={createInvite.bind(null, profile?.ampa_id!, profile?.id!)}>
-                    <button className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-500 shadow-lg shadow-indigo-100">
+                    <button className="flex items-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-bold text-white transition-all hover:opacity-90 shadow-lg shadow-brand/10">
                         <UserPlus className="h-4 w-4" /> Generar Código
                     </button>
                 </form>
@@ -100,7 +100,7 @@ export default async function AdminPage() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                     { label: 'Familias Activas', value: miembrosCount?.toString() || '0', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { label: 'Recursos Vistos', value: '0', icon: BarChart3, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Recursos Vistos', value: '0', icon: BarChart3, color: 'text-brand', bg: 'bg-brand/10' },
                     { label: 'Códigos Libres', value: invitacionesLibres?.toString() || '0', icon: Mail, color: 'text-amber-600', bg: 'bg-amber-50' },
                     { label: 'Reportes', value: '0', icon: ShieldAlert, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                 ].map((stat) => (
@@ -118,13 +118,13 @@ export default async function AdminPage() {
                 <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden text-slate-900">
                     <div className="border-b border-slate-100 p-6 flex justify-between items-center">
                         <h3 className="font-bold">Invitaciones Recientes</h3>
-                        <button className="text-sm text-indigo-600 font-bold hover:underline">Ver todas</button>
+                        <button className="text-sm text-brand font-bold hover:underline">Ver todas</button>
                     </div>
                     <div className="divide-y divide-slate-50">
                         {invitaciones?.map((inv) => (
                             <div key={inv.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className="font-mono font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg border border-indigo-100">
+                                    <div className="font-mono font-bold bg-brand/10 text-brand px-3 py-1 rounded-lg border border-brand/10">
                                         {inv.codigo}
                                     </div>
                                     <div>

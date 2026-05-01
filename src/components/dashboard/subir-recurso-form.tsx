@@ -109,7 +109,7 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
                     <input
                         name="titulo"
                         required
-                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all"
                         placeholder="Ej: Guía de límites en redes sociales"
                     />
                 </div>
@@ -117,7 +117,7 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Tipo</label>
-                        <select name="tipo" className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <select name="tipo" className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-brand transition-all">
                             <option value="articulo">Artículo / Texto</option>
                             <option value="pdf">Documento PDF</option>
                             <option value="video">Vídeo Embebido</option>
@@ -126,7 +126,7 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
                     </div>
                     <div>
                         <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Etapa Educativa</label>
-                        <select name="etapa" className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <select name="etapa" className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-brand transition-all">
                             <option value="infantil">Infantil</option>
                             <option value="primaria">Primaria</option>
                             <option value="eso">ESO</option>
@@ -140,7 +140,7 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
                     <textarea
                         name="descripcion"
                         rows={3}
-                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all"
                         placeholder="Explica brevemente qué aprenderán las familias..."
                     ></textarea>
                 </div>
@@ -149,29 +149,29 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Etiquetas (separadas por comas)</label>
                     <input
                         name="tags"
-                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all"
                         placeholder="Autoestima, Límites, Tecnología..."
                     />
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+                <div className="flex items-center gap-3 p-4 bg-brand/10/50 rounded-2xl border border-brand/10">
                     <input
                         type="checkbox"
                         id="destacado"
                         name="destacado"
-                        className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        className="h-5 w-5 rounded border-slate-300 text-brand focus:ring-brand"
                     />
                     <label htmlFor="destacado" className="text-sm font-bold text-slate-700 select-none">
-                        Marcar como recurso destacado <span className="text-[10px] text-indigo-500 block font-medium">Aparecerá en la sección de recomendados</span>
+                        Marcar como recurso destacado <span className="text-[10px] text-brand block font-medium">Aparecerá en la sección de recomendados</span>
                     </label>
                 </div>
 
                 <div className="relative">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Archivo (Máx 10MB)</label>
-                    <div className={`mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed ${file ? 'border-indigo-300 bg-indigo-50/30' : 'border-slate-200 bg-slate-50/30'} p-8 transition-all`}>
+                    <div className={`mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed ${file ? 'border-indigo-300 bg-brand/10/30' : 'border-slate-200 bg-slate-50/30'} p-8 transition-all`}>
                         {file ? (
                             <div className="flex flex-col items-center">
-                                <FileText className="h-10 w-10 text-indigo-500 mb-2" />
+                                <FileText className="h-10 w-10 text-brand mb-2" />
                                 <span className="text-sm font-bold text-slate-700">{file.name}</span>
                                 <button type="button" onClick={() => setFile(null)} className="mt-2 text-xs font-bold text-rose-500 hover:underline">Eliminar archivo</button>
                             </div>
@@ -191,7 +191,7 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
 
                 <button
                     disabled={loading}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 disabled:opacity-50 active:scale-[0.98] shadow-lg shadow-indigo-100"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand py-4 text-sm font-bold text-white transition-all hover:bg-brand disabled:opacity-50 active:scale-[0.98] shadow-lg shadow-brand/10"
                 >
                     {loading ? (
                         <Loader2 className="h-5 w-5 animate-spin" />

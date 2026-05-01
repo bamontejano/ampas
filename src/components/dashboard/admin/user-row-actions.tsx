@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { updateMemberRole, removeMember, updateMemberSubscription } from '@/app/actions/admin'
 import { ChevronDown, Trash2, Loader2, ShieldCheck, Users, Crown, CreditCard, CheckCircle2, Clock } from 'lucide-react'
 
-type Role = 'familia' | 'junta' | 'admin_ampa'
+type Role = 'user' | 'admin'
 type SubscriptionStatus = 'activo' | 'pendiente' | 'expirado'
 
 interface UserRowActionsProps {
@@ -15,20 +15,15 @@ interface UserRowActionsProps {
 }
 
 const roleLabels: Record<Role, { label: string; color: string; icon: React.ReactNode }> = {
-    familia: {
-        label: 'Familia',
+    user: {
+        label: 'Miembro',
         color: 'bg-slate-100 text-slate-600 border-slate-200',
         icon: <Users className="h-3.5 w-3.5" />,
     },
-    junta: {
-        label: 'Junta',
-        color: 'bg-blue-50 text-blue-600 border-blue-200',
-        icon: <ShieldCheck className="h-3.5 w-3.5" />,
-    },
-    admin_ampa: {
+    admin: {
         label: 'Admin',
-        color: 'bg-indigo-50 text-indigo-600 border-indigo-200',
-        icon: <Crown className="h-3.5 w-3.5" />,
+        color: 'bg-brand/10 text-brand border-brand/20',
+        icon: <ShieldCheck className="h-3.5 w-3.5" />,
     },
 }
 
@@ -61,7 +56,7 @@ export function SubscriptionBadge({ status }: { status: SubscriptionStatus }) {
 }
 
 export function UserRoleBadge({ role }: { role: Role }) {
-    const config = roleLabels[role] ?? roleLabels.familia
+    const config = roleLabels[role] ?? roleLabels.user
     return (
         <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-tight border ${config.color}`}>
             {config.icon}
@@ -164,10 +159,10 @@ export function UserRowActions({ memberId, currentRole, currentUserId, currentSu
                 <button
                     onClick={() => setShowRoleMenu(v => !v)}
                     disabled={isPending}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-tight border transition-all hover:opacity-80 ${roleLabels[role]?.color ?? roleLabels.familia.color}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-tight border transition-all hover:opacity-80 ${roleLabels[role]?.color ?? roleLabels.user.color}`}
                 >
                     {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : roleLabels[role]?.icon}
-                    {roleLabels[role]?.label ?? 'Familia'}
+                    {roleLabels[role]?.label ?? 'user'}
                     <ChevronDown className="h-3 w-3 opacity-60" />
                 </button>
 
@@ -179,11 +174,11 @@ export function UserRowActions({ memberId, currentRole, currentUserId, currentSu
                                 <button
                                     key={r}
                                     onClick={() => handleRoleChange(r)}
-                                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-tight transition-colors hover:bg-slate-50 ${role === r ? 'text-indigo-600' : 'text-slate-600'}`}
+                                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-tight transition-colors hover:bg-slate-50 ${role === r ? 'text-brand' : 'text-slate-600'}`}
                                 >
                                     {roleLabels[r].icon}
                                     {roleLabels[r].label}
-                                    {role === r && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" />}
+                                    {role === r && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" />}
                                 </button>
                             ))}
                         </div>

@@ -35,7 +35,7 @@ export default async function NotificacionesPage() {
     const getIcon = (tipo: string) => {
         switch (tipo) {
             case 'evento': return <Calendar className="h-6 w-6 text-emerald-500" />
-            case 'votacion': return <Vote className="h-6 w-6 text-indigo-500" />
+            case 'votacion': return <Vote className="h-6 w-6 text-brand" />
             case 'comunidad': return <Users className="h-6 w-6 text-amber-500" />
             default: return <Bell className="h-6 w-6 text-slate-400" />
         }
@@ -58,7 +58,7 @@ export default async function NotificacionesPage() {
                     notifications.map((n: any) => (
                         <div
                             key={n.id}
-                            className={`group relative bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 transition-all hover:shadow-indigo-100/50 flex flex-col md:flex-row gap-6 items-start md:items-center ${!n.leida ? 'border-l-4 border-l-indigo-500 bg-indigo-50/10' : ''}`}
+                            className={`group relative bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/40 transition-all hover:shadow-brand/10/50 flex flex-col md:flex-row gap-6 items-start md:items-center ${!n.leida ? 'border-l-4 border-l-indigo-500 bg-brand/10/10' : ''}`}
                         >
                             <div className={`h-16 w-16 shrink-0 rounded-[1.5rem] flex items-center justify-center shadow-sm ${!n.leida ? 'bg-white' : 'bg-slate-50'}`}>
                                 {getIcon(n.tipo)}
@@ -68,7 +68,7 @@ export default async function NotificacionesPage() {
                                 <div className="flex items-center gap-3">
                                     <h3 className="text-xl font-black text-slate-900">{n.titulo}</h3>
                                     {!n.leida && (
-                                        <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                                        <span className="h-2 w-2 rounded-full bg-brand animate-pulse" />
                                     )}
                                 </div>
                                 <p className="text-slate-500 font-medium leading-relaxed">
@@ -86,7 +86,7 @@ export default async function NotificacionesPage() {
                                 {n.enlace && (
                                     <Link
                                         href={n.enlace}
-                                        className="flex-1 md:flex-none text-center px-6 py-3 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95"
+                                        className="flex-1 md:flex-none text-center px-6 py-3 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-brand transition-all active:scale-95"
                                     >
                                         Ir al contenido
                                     </Link>
@@ -96,7 +96,7 @@ export default async function NotificacionesPage() {
                                         'use server'
                                         await markAsRead(n.id)
                                     }}>
-                                        <button className="h-12 w-12 rounded-xl border border-indigo-100 text-indigo-500 flex items-center justify-center hover:bg-indigo-50 transition-colors">
+                                        <button className="h-12 w-12 rounded-xl border border-brand/10 text-brand flex items-center justify-center hover:bg-brand/10 transition-colors">
                                             <Check className="h-5 w-5" />
                                         </button>
                                     </form>

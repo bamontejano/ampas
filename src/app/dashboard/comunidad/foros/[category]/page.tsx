@@ -141,7 +141,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-slate-700">
                                                 {post.profiles?.nombre_completo || 'Usuario de la comunidad'}
-                                                {post.profiles?.rol === 'junta' && (
+                                                {post.profiles?.rol === 'admin' && (
                                                     <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase">Junta</span>
                                                 )}
                                             </span>

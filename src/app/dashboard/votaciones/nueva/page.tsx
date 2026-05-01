@@ -74,7 +74,7 @@ export default function NewPollPage() {
         <div className="max-w-4xl mx-auto pb-20">
             <Link
                 href="/dashboard/votaciones"
-                className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors mb-8 font-medium group"
+                className="inline-flex items-center gap-2 text-slate-500 hover:text-brand transition-colors mb-8 font-medium group"
             >
                 <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 Volver a votaciones
@@ -107,7 +107,7 @@ export default function NewPollPage() {
                     <div className="space-y-8 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50">
                         <div className="space-y-6">
                             <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-100">
+                                <div className="h-10 w-10 rounded-2xl bg-brand text-white flex items-center justify-center shadow-lg shadow-brand/10">
                                     <Type className="h-5 w-5" />
                                 </div>
                                 Pregunta
@@ -149,7 +149,7 @@ export default function NewPollPage() {
                                 <button
                                     type="button"
                                     onClick={addOpcion}
-                                    className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors"
+                                    className="text-[10px] font-black text-brand/80 uppercase tracking-widest hover:text-indigo-300 transition-colors"
                                 >
                                     + Añadir
                                 </button>
@@ -211,7 +211,7 @@ export default function NewPollPage() {
                                             type="checkbox"
                                             className="sr-only peer"
                                         />
-                                        <div className="w-12 h-6 bg-slate-200 rounded-full peer-checked:bg-indigo-600 transition-colors" />
+                                        <div className="w-12 h-6 bg-slate-200 rounded-full peer-checked:bg-brand transition-colors" />
                                         <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-6" />
                                     </div>
                                     <div className="flex flex-col">
@@ -234,7 +234,7 @@ export default function NewPollPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center gap-3 rounded-[1.5rem] bg-indigo-600 px-12 py-5 text-sm font-black text-white transition-all hover:bg-indigo-700 shadow-2xl shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-3 rounded-[1.5rem] bg-brand px-12 py-5 text-sm font-black text-white transition-all hover:bg-indigo-700 shadow-2xl shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <>

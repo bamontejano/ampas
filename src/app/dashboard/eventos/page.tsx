@@ -49,9 +49,14 @@ export default async function EventosPage() {
     const eventos = eventosRaw as any[]
     const misEventosIds = new Set((misAsistencias as any[])?.map(a => a.evento_id))
 
-    // Stats
+    // Stats calculation
     const proximoEvento = eventos?.[0]
     const totalEventos = eventos?.length || 0
+    
+    // Sum counts from asistencias_eventos query
+    const totalInscripciones = eventos?.reduce((acc, curr) => {
+        return acc + (curr.asistencias_eventos?.[0]?.count || 0)
+    }, 0) || 0
 
     return (
         <div className="space-y-12 pb-16">
@@ -64,15 +69,7 @@ export default async function EventosPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="relative group hidden sm:block">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Buscar eventos..."
-                            className="bg-white border-slate-200 rounded-2xl py-3.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all w-72"
-                        />
-                    </div>
-                    {(profile?.rol === 'junta' || profile?.rol === 'admin_ampa') && (
+                    {(profile?.rol === 'admin' || profile?.rol === 'admin') && (
                         <Link
                             href="/dashboard/eventos/nuevo"
                             className="flex items-center gap-2 rounded-[1.5rem] bg-slate-900 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-slate-800 shadow-xl shadow-slate-200 active:scale-95"
@@ -83,11 +80,11 @@ export default async function EventosPage() {
                 </div>
             </div>
 
-            {/* Quick Stats Summary */}
+            {/* Dynamic Stats Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {[
-                    { label: 'Eventos próximos', value: totalEventos, icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                    { label: 'Inscripciones totales', value: '120+', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Eventos próximos', value: totalEventos, icon: Calendar, color: 'text-brand', bg: 'bg-brand/10' },
+                    { label: 'Inscripciones totales', value: totalInscripciones, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                     { label: 'Próxima cita', value: proximoEvento ? format(new Date(proximoEvento.fecha_inicio), 'd MMM', { locale: es }) : 'N/A', icon: Clock, color: 'text-rose-600', bg: 'bg-rose-50' },
                 ].map((stat) => (
                     <div key={stat.label} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-5">
@@ -105,7 +102,7 @@ export default async function EventosPage() {
             {eventos && eventos.length > 0 ? (
                 <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
                     {eventos.map((evento) => (
-                        <div key={evento.id} className="group relative flex flex-col rounded-[3rem] border border-slate-100 bg-white p-3 shadow-2xl shadow-slate-200/40 transition-all hover:-translate-y-2 hover:shadow-indigo-100">
+                        <div key={evento.id} className="group relative flex flex-col rounded-[3rem] border border-slate-100 bg-white p-3 shadow-2xl shadow-slate-200/40 transition-all hover:-translate-y-2 hover:shadow-brand/10">
                             {/* Visual Header */}
                             <div className="relative h-56 w-full overflow-hidden rounded-[2.5rem]">
                                 {evento.imagen_url ? (
@@ -113,14 +110,14 @@ export default async function EventosPage() {
                                 ) : (
                                     <div className="h-full w-full bg-slate-900 flex items-center justify-center">
                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-purple-600/20"></div>
-                                        <Calendar className="h-20 w-20 text-indigo-500/30" />
+                                        <Calendar className="h-20 w-20 text-brand/30" />
                                     </div>
                                 )}
 
                                 <div className="absolute top-6 left-6">
                                     <div className="flex items-center gap-2 rounded-2xl bg-white/10 backdrop-blur-xl px-4 py-2 text-[10px] font-black text-white border border-white/20 uppercase tracking-widest shadow-2xl">
                                         {evento.tipo === 'online' ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
-                                        {evento.tipo}
+                                        <span className="capitalize">{evento.tipo}</span>
                                     </div>
                                 </div>
 
@@ -157,7 +154,7 @@ export default async function EventosPage() {
                                         <div className="bg-slate-50/80 p-4 rounded-3xl border border-slate-100 flex flex-col gap-1">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Horario</span>
                                             <div className="flex items-center gap-2 text-slate-800 font-black text-sm">
-                                                <Clock className="h-3.5 w-3.5 text-indigo-500" />
+                                                <Clock className="h-3.5 w-3.5 text-brand" />
                                                 {format(new Date(evento.fecha_inicio), 'HH:mm')}
                                             </div>
                                         </div>
@@ -170,10 +167,10 @@ export default async function EventosPage() {
                                         isRegisteredInitial={misEventosIds.has(evento.id)}
                                     />
 
-                                    {(profile?.rol === 'junta' || profile?.rol === 'admin_ampa') && (
+                                    {(profile?.rol === 'admin' || profile?.rol === 'admin') && (
                                         <Link
                                             href={`/dashboard/eventos/${evento.id}/asistencias`}
-                                            className="w-full text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors"
+                                            className="w-full text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-brand transition-colors"
                                         >
                                             Ver lista de asistentes
                                         </Link>
@@ -192,10 +189,10 @@ export default async function EventosPage() {
                     <p className="text-slate-500 max-w-lg mx-auto mb-10 text-lg leading-relaxed">
                         Estamos planificando las próximas actividades. Suscríbete a las notificaciones para ser el primero en enterarte.
                     </p>
-                    {(profile?.rol === 'junta' || profile?.rol === 'admin_ampa') && (
+                    {(profile?.rol === 'admin' || profile?.rol === 'admin') && (
                         <Link
                             href="/dashboard/eventos/nuevo"
-                            className="flex items-center gap-3 rounded-2xl bg-indigo-600 px-10 py-5 text-sm font-black text-white transition-all hover:bg-indigo-700 shadow-2xl shadow-indigo-200"
+                            className="flex items-center gap-3 rounded-2xl bg-brand px-10 py-5 text-sm font-black text-white transition-all hover:opacity-90 shadow-2xl" style={{ backgroundColor: 'var(--brand-primary)' }}
                         >
                             <Plus className="h-6 w-6" /> Programar Actividad
                         </Link>

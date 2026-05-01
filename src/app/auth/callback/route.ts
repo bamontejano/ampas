@@ -26,6 +26,7 @@ export async function GET(request: Request) {
                         p_codigo: codigoInvitacion,
                         p_user_id: user.id,
                         p_nombre_completo: user.user_metadata?.nombre_completo || null,
+                        p_email: user.email || null,
                     }
                 )
 
@@ -52,12 +53,8 @@ export async function GET(request: Request) {
 
                 const userRol = profile?.rol
 
-                if (userRol === 'admin_ampa' || userRol === 'junta') {
+                if (userRol === 'admin') {
                     return NextResponse.redirect(`${origin}/dashboard/admin`)
-                }
-
-                if (userRol === 'superadmin') {
-                    return NextResponse.redirect(`${origin}/dashboard/superadmin/ampas`)
                 }
             }
 

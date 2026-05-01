@@ -56,7 +56,7 @@ export default async function RecursosPage({
     const recursos = (recursosRaw || []) as Recurso[]
     const destacados = recursos.filter(r => r.destacado)
 
-    const canCreate = ['admin_ampa', 'junta', 'superadmin'].includes(profile?.rol || '')
+    const canCreate = profile?.rol === 'admin'
 
     const types = [
         { id: 'guia', label: 'Guías', icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -89,7 +89,7 @@ export default async function RecursosPage({
                                 name="q"
                                 defaultValue={q}
                                 placeholder="Buscar por tema o título..."
-                                className="w-full rounded-2xl bg-white/10 border-none py-4 pl-12 pr-4 text-sm font-medium focus:bg-white/20 focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-500 text-white"
+                                className="w-full rounded-2xl bg-white/10 border-none py-4 pl-12 pr-4 text-sm font-medium focus:bg-white/20 focus:ring-2 focus:ring-brand transition-all placeholder:text-slate-500 text-white"
                             />
                         </form>
                         {canCreate && (
@@ -99,7 +99,7 @@ export default async function RecursosPage({
                 </div>
 
                 {/* Abstract Shapes */}
-                <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-indigo-500/10 blur-[100px]"></div>
+                <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-brand/10 blur-[100px]"></div>
                 <div className="absolute right-20 bottom-0 h-64 w-64 rounded-full bg-emerald-500/10 blur-[80px]"></div>
             </header>
 
@@ -109,7 +109,7 @@ export default async function RecursosPage({
                     <Link
                         key={t.id}
                         href={`/dashboard/recursos?tipo=${t.id}`}
-                        className={`flex flex-col items-center justify-center gap-4 rounded-[2.5rem] p-8 shadow-xl transition-all text-center group cursor-pointer border ${tipo === t.id ? 'bg-white border-indigo-200 shadow-indigo-100' : 'bg-white border-slate-100 shadow-slate-200/40 hover:scale-105'}`}
+                        className={`flex flex-col items-center justify-center gap-4 rounded-[2.5rem] p-8 shadow-xl transition-all text-center group cursor-pointer border ${tipo === t.id ? 'bg-white border-brand/20 shadow-brand/10' : 'bg-white border-slate-100 shadow-slate-200/40 hover:scale-105'}`}
                     >
                         <div className={`h-16 w-16 rounded-2xl ${t.bg} ${t.color} flex items-center justify-center group-hover:rotate-12 transition-transform`}>
                             <t.icon className="h-8 w-8" />
@@ -119,9 +119,9 @@ export default async function RecursosPage({
                 ))}
                 <Link
                     href="/dashboard/recursos"
-                    className={`flex flex-col items-center justify-center gap-4 rounded-[2.5rem] p-8 shadow-xl transition-all text-center group cursor-pointer border ${!tipo ? 'bg-indigo-600 border-indigo-600 shadow-indigo-200 text-white' : 'bg-white border-slate-100 shadow-slate-200/40 hover:scale-105'}`}
+                    className={`flex flex-col items-center justify-center gap-4 rounded-[2.5rem] p-8 shadow-xl transition-all text-center group cursor-pointer border ${!tipo ? 'bg-brand border-brand shadow-brand/20 text-white' : 'bg-white border-slate-100 shadow-slate-200/40 hover:scale-105'}`}
                 >
-                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform ${!tipo ? 'bg-white/20' : 'bg-indigo-600 text-white'}`}>
+                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform ${!tipo ? 'bg-white/20' : 'bg-brand text-white'}`}>
                         <Filter className="h-8 w-8" />
                     </div>
                     <span className={`font-black uppercase text-xs tracking-widest ${!tipo ? 'text-white' : 'text-slate-900'}`}>{!tipo ? 'Viendo Todos' : 'Ver Todos'}</span>
@@ -158,10 +158,10 @@ export default async function RecursosPage({
                                     <div className="space-y-3">
                                         <div className="flex flex-wrap gap-2">
                                             {recurso.tags?.map(tag => (
-                                                <span key={tag} className="text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">{tag}</span>
+                                                <span key={tag} className="text-[10px] font-black uppercase tracking-widest text-brand bg-brand/10 px-2 py-0.5 rounded-md">{tag}</span>
                                             ))}
                                         </div>
-                                        <h4 className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight">
+                                        <h4 className="text-xl font-black text-slate-900 group-hover:text-brand transition-colors leading-tight">
                                             {recurso.titulo}
                                         </h4>
                                         <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed">
@@ -223,8 +223,8 @@ export default async function RecursosPage({
                 <aside className="lg:col-span-4 space-y-10">
                     {/* Featured / Destacados */}
                     {destacados.length > 0 && (
-                        <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden">
-                            <h3 className="relative z-10 text-xs font-black uppercase tracking-widest text-indigo-200 mb-6 flex items-center gap-2">
+                        <div className="rounded-[2.5rem] bg-brand p-8 text-white shadow-2xl shadow-brand/20 relative overflow-hidden" style={{ backgroundColor: 'var(--brand-primary)' }}>
+                            <h3 className="relative z-10 text-xs font-black uppercase tracking-widest text-white/70 mb-6 flex items-center gap-2">
                                 <Sparkles className="h-4 w-4" />
                                 Recomendados
                             </h3>
@@ -232,7 +232,7 @@ export default async function RecursosPage({
                                 {destacados.slice(0, 3).map(dest => (
                                     <Link key={dest.id} href="#" className="block group">
                                         <h4 className="text-sm font-bold group-hover:text-indigo-200 transition-colors line-clamp-2">{dest.titulo}</h4>
-                                        <div className="mt-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-indigo-200/60">
+                                        <div className="mt-2 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-white/60">
                                             <span>{dest.tipo}</span>
                                             <ChevronRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
                                         </div>
@@ -247,7 +247,7 @@ export default async function RecursosPage({
                     {/* Tags Cloud */}
                     <div className="rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/40">
                         <h3 className="mb-6 font-black text-slate-900 flex items-center gap-2 uppercase text-xs tracking-widest">
-                            <Tag className="h-4 w-4 text-indigo-500" />
+                            <Tag className="h-4 w-4 text-brand" />
                             Temas Populares
                         </h3>
                         <div className="flex flex-wrap gap-2">
@@ -260,15 +260,15 @@ export default async function RecursosPage({
                     </div>
 
                     {/* Needs Help Section */}
-                    <div className="rounded-[2.5rem] border border-indigo-100 bg-indigo-50/50 p-8 text-center space-y-4">
-                        <div className="h-16 w-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-indigo-200 rotate-3">
+                    <div className="rounded-[2.5rem] border border-brand/10 bg-brand/5 p-8 text-center space-y-4">
+                        <div className="h-16 w-16 rounded-2xl bg-brand text-white flex items-center justify-center mx-auto shadow-lg shadow-brand/20 rotate-3">
                             <GraduationCap className="h-8 w-8" />
                         </div>
                         <h3 className="text-lg font-black text-slate-900">¿No encuentras lo que buscas?</h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed">
                             Ponte en contacto con la junta de tu AMPA para sugerir nuevos temas o materiales.
                         </p>
-                        <button className="w-full rounded-xl bg-white border border-indigo-100 py-3 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all">
+                        <button className="w-full rounded-xl bg-white border border-brand/10 py-3 text-[10px] font-black uppercase tracking-widest text-brand hover:bg-brand hover:text-white transition-all">
                             Sugerir Tema
                         </button>
                     </div>

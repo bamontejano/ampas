@@ -55,7 +55,7 @@ export default function OnboardingClient() {
                 {/* Progress Bar */}
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-100">
                     <div
-                        className="h-full bg-indigo-600 transition-all duration-700 ease-out"
+                        className="h-full bg-brand transition-all duration-700 ease-out"
                         style={{ width: view === 'welcome' ? '50%' : '100%' }}
                     ></div>
                 </div>
@@ -65,12 +65,12 @@ export default function OnboardingClient() {
                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             {/* Header */}
                             <div className="space-y-4">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 text-brand text-[10px] font-black uppercase tracking-widest border border-brand/10">
                                     <Sparkles className="w-3.5 h-3.5" />
                                     Te damos la bienvenida
                                 </div>
                                 <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
-                                    Conecta con tu <span className="text-indigo-600">Comunidad</span>
+                                    Conecta con tu <span className="text-brand">Comunidad</span>
                                 </h1>
                                 <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-md">
                                     Estás a un paso de acceder a todos los recursos, eventos y foros psicoeducativos de tu centro escolar.
@@ -84,11 +84,11 @@ export default function OnboardingClient() {
                                     className="group relative flex flex-col items-start p-6 text-left rounded-3xl bg-slate-900 hover:bg-slate-800 transition-all active:scale-[0.98] shadow-xl shadow-slate-200"
                                 >
                                     <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <Ticket className="w-6 h-6 text-indigo-400" />
+                                        <Ticket className="w-6 h-6 text-brand/80" />
                                     </div>
                                     <h3 className="text-white font-bold text-lg">Tengo un código</h3>
                                     <p className="text-slate-400 text-xs font-semibold mt-1">Únete a tu AMPA usando el código que te han facilitado.</p>
-                                    <ArrowRight className="absolute bottom-6 right-6 w-5 h-5 text-indigo-400 opacity-50 group-hover:opacity-100 transition-all" />
+                                    <ArrowRight className="absolute bottom-6 right-6 w-5 h-5 text-brand/80 opacity-50 group-hover:opacity-100 transition-all" />
                                 </button>
 
                                 <button
@@ -96,12 +96,12 @@ export default function OnboardingClient() {
                                     disabled={isPending}
                                     className="group relative flex flex-col items-start p-6 text-left rounded-3xl bg-white hover:bg-slate-50 border-2 border-slate-100 transition-all active:scale-[0.98]"
                                 >
-                                    <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        {isPending ? <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" /> : <Users className="w-6 h-6 text-indigo-600" />}
+                                    <div className="h-12 w-12 rounded-2xl bg-brand/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        {isPending ? <Loader2 className="w-6 h-6 text-brand animate-spin" /> : <Users className="w-6 h-6 text-brand" />}
                                     </div>
                                     <h3 className="text-slate-900 font-bold text-lg">Solo explorar</h3>
                                     <p className="text-slate-500 text-xs font-semibold mt-1">Entra sin asociarte a un centro por ahora.</p>
-                                    <ChevronRight className="absolute bottom-6 right-6 w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-all" />
+                                    <ChevronRight className="absolute bottom-6 right-6 w-5 h-5 text-slate-300 group-hover:text-brand transition-all" />
                                 </button>
                             </div>
 
@@ -121,7 +121,7 @@ export default function OnboardingClient() {
                             <div className="space-y-4">
                                 <button
                                     onClick={() => setView('welcome')}
-                                    className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors flex items-center gap-2"
+                                    className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-brand transition-colors flex items-center gap-2"
                                 >
                                     <ArrowRight className="w-3 h-3 rotate-180" />
                                     Volver atrás
@@ -141,9 +141,9 @@ export default function OnboardingClient() {
                                         required
                                         maxLength={20}
                                         placeholder="EJ: ADMIN-XJ72P9"
-                                        className="w-full h-20 text-center text-xl font-black tracking-normal uppercase rounded-3xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all placeholder:text-slate-200"
+                                        className="w-full h-20 text-center text-xl font-black tracking-normal uppercase rounded-3xl border-2 border-slate-100 bg-slate-50 focus:bg-white focus:border-brand focus:outline-none transition-all placeholder:text-slate-200"
                                     />
-                                    <div className="absolute inset-0 rounded-3xl bg-indigo-600/5 opacity-0 group-focus-within:opacity-100 -z-10 blur-xl transition-all"></div>
+                                    <div className="absolute inset-0 rounded-3xl bg-brand/5 opacity-0 group-focus-within:opacity-100 -z-10 blur-xl transition-all"></div>
                                 </div>
 
                                 {error && (
@@ -156,7 +156,7 @@ export default function OnboardingClient() {
                                 <button
                                     type="submit"
                                     disabled={isPending}
-                                    className="w-full h-16 rounded-[2rem] bg-indigo-600 flex items-center justify-center gap-3 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-indigo-500 active:scale-95 transition-all shadow-xl shadow-indigo-100 disabled:opacity-50"
+                                    className="w-full h-16 rounded-[2rem] bg-brand flex items-center justify-center gap-3 text-white font-black uppercase tracking-[0.2em] text-xs hover:bg-brand active:scale-95 transition-all shadow-xl shadow-brand/10 disabled:opacity-50"
                                 >
                                     {isPending ? (
                                         <>

@@ -16,7 +16,8 @@ import {
     ChevronRight,
     Building2,
     LayoutGrid,
-    Shield
+    Shield,
+    Bell
 } from 'lucide-react'
 import NotificationBell from '@/components/dashboard/notification-bell'
 
@@ -29,27 +30,25 @@ export default async function DashboardLayout({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/auth/login')
 
-    const { data: profileRaw, error: profileError } = await supabase
-        .from('profiles')
-        .select('*, ampas(*)')
-        .eq('id', user.id)
-        .maybeSingle()
+    let profile = null
+    let ampa = null
 
-    if (profileError || !profileRaw) {
-        // Redirigir si no hay sesión real o el perfil no existe
-        return redirect('/auth/login')
+    try {
+        const { data: profileRaw, error: profileError } = await supabase
+            .from('profiles')
+            .select('*, ampas(*)')
+            .eq('id', user.id)
+            .maybeSingle()
+
+        if (profileRaw) {
+            profile = profileRaw as any
+            ampa = profile?.ampas
+        }
+    } catch (e) {
+        console.error('Error in DashboardLayout:', e)
     }
 
-    const profile = profileRaw as any
-
-    // REDIRECT IF ONBOARDING NOT COMPLETED (Eliminado a petición para evitar bucles)
-    /* 
-    if (!profile.onboarding_completado && !profile.ampa_id) {
-        redirect('/onboarding')
-    }
-    */
-
-    const ampa = profile?.ampas
+    const ampaName = 'AMPA IES Cristo del Rosario'
 
     // Fetch notifications
     const { data: notificationsRaw } = await supabase
@@ -70,30 +69,43 @@ export default async function DashboardLayout({
         { name: 'Mis Apps', href: '/dashboard/apps', icon: Gamepad2 },
     ]
 
-    const rol = profile?.rol || ''
-    const isSuperadmin = rol === 'superadmin'
-    const isAmpaAdmin = rol === 'admin_ampa'
-    const isJunta = rol === 'junta'
+    const rol = profile?.rol || 'user'
+    const isAdmin = rol === 'admin'
 
-    // AMPA admin nav: admin_ampa only (junta only sees invitaciones)
-    const ampaAdminNavItems = (isAmpaAdmin || isJunta) ? [
-        ...(isAmpaAdmin ? [{ name: 'Usuarios', href: '/dashboard/admin/usuarios', icon: UserCog }] : []),
+    // AMPA admin nav: admin only
+    const ampaAdminNavItems = isAdmin ? [
+        { name: 'Usuarios', href: '/dashboard/admin/usuarios', icon: UserCog },
+        { name: 'Comunicados', href: '/dashboard/admin/mensajeria', icon: Bell },
+        { name: 'Gestionar Apps', href: '/dashboard/admin/apps', icon: LayoutGrid },
+        { name: 'Ajustes', href: '/dashboard/admin/perfil-ampa', icon: Settings },
         { name: 'Invitaciones', href: '/dashboard/admin/invitaciones', icon: Ticket },
     ] : []
 
-    // Superadmin-only nav: platform management
-    const superadminNavItems = isSuperadmin ? [
-        { name: 'Todas las AMPAs', href: '/dashboard/superadmin/ampas', icon: Building2 },
-    ] : []
+    const primaryColor = '#4f46e5'
 
     return (
-        <div className="flex min-h-screen bg-slate-50/50">
+        <div className="flex min-h-screen bg-slate-50/50" style={{ ['--brand-primary' as any]: primaryColor }}>
+            <style dangerouslySetInnerHTML={{ __html: `
+                .text-brand { color: var(--brand-primary); }
+                .bg-brand { background-color: var(--brand-primary); }
+                .border-brand { border-color: var(--brand-primary); }
+                .hover\\:text-brand:hover { color: var(--brand-primary); }
+                .hover\\:bg-brand:hover { background-color: var(--brand-primary); }
+                .focus\\:ring-brand:focus { --tw-ring-color: var(--brand-primary); }
+            `}} />
             {/* Sidebar Desktop */}
             <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-white lg:block">
                 <div className="flex h-full flex-col">
-                    <div className="flex h-16 items-center border-b border-slate-200 px-6">
-                        <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
-                            AMPA Connect
+                    <div className="flex h-16 items-center border-b border-slate-200 px-6 gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-brand flex items-center justify-center text-white overflow-hidden shadow-sm ring-1 ring-slate-100 shrink-0">
+                            {ampa?.logo_url ? (
+                                <img src={ampa.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="font-bold">A</span>
+                            )}
+                        </div>
+                        <span className="text-sm font-black text-slate-900 tracking-tight truncate">
+                            {ampaName}
                         </span>
                     </div>
 
@@ -102,7 +114,7 @@ export default async function DashboardLayout({
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 hover:text-indigo-600 transition-all group"
+                                className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-slate-100 hover:text-brand transition-all group"
                             >
                                 <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                 {item.name}
@@ -114,34 +126,13 @@ export default async function DashboardLayout({
                             <div className="pt-4">
                                 <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
                                     <Settings className="w-3.5 h-3.5 text-slate-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mi AMPA</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Administración</span>
                                 </div>
                                 {ampaAdminNavItems.map((item) => (
                                     <Link
                                         key={item.name}
                                         href={item.href}
-                                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all group"
-                                    >
-                                        <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                        {item.name}
-                                        <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Superadmin Section */}
-                        {superadminNavItems.length > 0 && (
-                            <div className="pt-4">
-                                <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
-                                    <Shield className="w-3.5 h-3.5 text-violet-400" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-violet-400">Plataforma</span>
-                                </div>
-                                {superadminNavItems.map((item) => (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-violet-50 hover:text-violet-600 transition-all group"
+                                        className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 rounded-xl hover:bg-brand/5 hover:text-brand transition-all group"
                                     >
                                         <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
                                         {item.name}
@@ -155,17 +146,14 @@ export default async function DashboardLayout({
                     {/* User Section */}
                     <div className="p-4 mt-auto border-t border-slate-200">
                         <div className="flex items-center gap-3 px-2 mb-4">
-                            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+                            <div className="h-10 w-10 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold border-2 border-white shadow-sm">
                                 {profile?.nombre_completo?.[0] || 'U'}
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm font-semibold text-slate-900 truncate">{profile?.nombre_completo}</p>
                                 <p className="text-xs truncate font-semibold"
-                                    style={{ color: rol === 'superadmin' ? '#7c3aed' : rol === 'admin_ampa' ? '#4f46e5' : '#6b7280' }}>
-                                    {rol === 'superadmin' ? '⚡ Superadmin'
-                                        : rol === 'admin_ampa' ? `Admin · ${ampa?.nombre || 'AMPA'}`
-                                            : rol === 'junta' ? `Junta · ${ampa?.nombre || 'AMPA'}`
-                                                : ampa?.nombre || 'Miembro'}
+                                    style={{ color: rol === 'admin' ? '#4f46e5' : '#6b7280' }}>
+                                    {rol === 'admin' ? 'Administrador' : 'Miembro'}
                                 </p>
                             </div>
                         </div>
@@ -184,9 +172,18 @@ export default async function DashboardLayout({
             <main className="lg:pl-64 w-full">
                 {/* Header */}
                 <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-                    <h1 className="text-lg font-semibold text-slate-900 lg:hidden">AMPA Connect</h1>
+                    <div className="flex items-center gap-2 lg:hidden overflow-hidden max-w-[200px]">
+                        <div className="h-6 w-6 rounded-md bg-brand flex items-center justify-center text-white shrink-0 overflow-hidden">
+                             {ampa?.logo_url ? (
+                                <img src={ampa.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="font-bold text-xs">A</span>
+                            )}
+                        </div>
+                        <h1 className="text-sm font-black text-slate-900 truncate">{ampaName}</h1>
+                    </div>
                     <div className="hidden lg:block text-slate-500 text-sm font-medium italic">
-                        {ampa?.colegio_nombre ? `Comunidad del ${ampa.colegio_nombre}` : 'Psicoeducación y Comunidad'}
+                        Comunidad IES Cristo del Rosario
                     </div>
                     <div className="flex items-center gap-4">
                         <NotificationBell
@@ -194,7 +191,7 @@ export default async function DashboardLayout({
                             perfilId={user?.id as string}
                         />
                         <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 lg:hidden font-bold">
-                            {profile?.nombre_completo?.[0]}
+                            {profile?.nombre_completo?.[0] || 'U'}
                         </div>
                     </div>
                 </header>
@@ -211,7 +208,7 @@ export default async function DashboardLayout({
                         <Link
                             key={item.name}
                             href={item.href}
-                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-slate-600 hover:text-indigo-600"
+                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-slate-600 hover:text-brand"
                         >
                             <item.icon className="w-6 h-6" />
                             {item.name}
@@ -220,19 +217,10 @@ export default async function DashboardLayout({
                     {ampaAdminNavItems.length > 0 && (
                         <Link
                             href="/dashboard/admin/usuarios"
-                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-indigo-600"
+                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-brand"
                         >
                             <UserCog className="w-6 h-6" />
                             Admin
-                        </Link>
-                    )}
-                    {superadminNavItems.length > 0 && (
-                        <Link
-                            href="/dashboard/superadmin/ampas"
-                            className="flex flex-col items-center gap-1 p-2 text-[10px] font-medium text-violet-600"
-                        >
-                            <LayoutGrid className="w-6 h-6" />
-                            Plat.
                         </Link>
                     )}
                 </div>

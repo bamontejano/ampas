@@ -25,7 +25,7 @@ export default async function AdminInvitacionesPage() {
         .eq('id', user.id)
         .single()
 
-    if (!['admin_ampa', 'superadmin', 'junta'].includes(profile?.rol || '')) {
+    if (!['admin', 'admin', 'admin'].includes(profile?.rol || '')) {
         redirect('/dashboard')
     }
 
@@ -38,7 +38,7 @@ export default async function AdminInvitacionesPage() {
     return (
         <div className="max-w-6xl mx-auto space-y-10 pb-20">
             {/* Hero Admin */}
-            <header className="relative overflow-hidden rounded-[3rem] bg-indigo-600 p-10 md:p-16 text-white shadow-2xl shadow-indigo-200">
+            <header className="relative overflow-hidden rounded-[3rem] bg-brand p-10 md:p-16 text-white shadow-2xl shadow-brand/20" style={{ backgroundColor: 'var(--brand-primary)' }}>
                 <div className="relative z-10 max-w-2xl space-y-6">
                     <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-widest backdrop-blur-md">
                         <Ticket className="h-4 w-4" />
@@ -46,9 +46,9 @@ export default async function AdminInvitacionesPage() {
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tighter">
                         Gestión de Acceso <br />
-                        <span className="text-indigo-200">Códigos de Invitación</span>
+                        <span className="text-white/70">Códigos de Invitación</span>
                     </h1>
-                    <p className="text-lg text-indigo-100 font-medium leading-relaxed opacity-90">
+                    <p className="text-lg text-white/80 font-medium leading-relaxed opacity-90">
                         Genera códigos únicos para que las familias del {profile.ampas.colegio_nombre} puedan unirse a la plataforma de forma segura.
                     </p>
 
@@ -57,7 +57,7 @@ export default async function AdminInvitacionesPage() {
                             'use server'
                             await createInvitations(1)
                         }}>
-                            <button className="flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-indigo-600 uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-xl">
+                            <button className="flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-brand uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-xl">
                                 <Plus className="h-5 w-5" />
                                 Generar 1 Código
                             </button>
@@ -66,7 +66,7 @@ export default async function AdminInvitacionesPage() {
                             'use server'
                             await createInvitations(5)
                         }}>
-                            <button className="flex items-center gap-2 rounded-2xl bg-indigo-500 px-6 py-4 text-sm font-black text-white uppercase tracking-widest hover:bg-indigo-400 transition-all active:scale-95 border border-indigo-400">
+                            <button className="flex items-center gap-2 rounded-2xl bg-white/20 px-6 py-4 text-sm font-black text-white uppercase tracking-widest hover:bg-white/30 transition-all active:scale-95 border border-white/20 backdrop-blur-sm">
                                 <Plus className="h-5 w-5" />
                                 Generar 5 Códigos
                             </button>
@@ -106,10 +106,10 @@ export default async function AdminInvitacionesPage() {
                                 <tr key={inv.id} className="hover:bg-slate-50/30 transition-colors group">
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-3">
-                                            <span className="font-mono text-lg font-black text-indigo-600 tracking-widest bg-indigo-50 px-3 py-1 rounded-lg">
+                                            <span className="font-mono text-lg font-black text-brand tracking-widest bg-brand/10 px-3 py-1 rounded-lg">
                                                 {inv.codigo}
                                             </span>
-                                            <button className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 transition-all">
+                                            <button className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-brand transition-all">
                                                 <Copy className="h-4 w-4" />
                                             </button>
                                         </div>
@@ -168,7 +168,7 @@ export default async function AdminInvitacionesPage() {
             {/* Quick Tips */}
             <div className="grid md:grid-cols-2 gap-6">
                 <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-xl flex items-start gap-6">
-                    <div className="h-14 w-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <div className="h-14 w-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
                         <ArrowRight className="h-8 w-8" />
                     </div>
                     <div className="space-y-2">

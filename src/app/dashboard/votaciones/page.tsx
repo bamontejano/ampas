@@ -66,10 +66,10 @@ export default async function VotacionesPage() {
                     <button className="flex items-center gap-2 rounded-[1.5rem] bg-white border border-slate-200 px-6 py-4 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 active:scale-95">
                         <History className="h-4 w-4" /> Historial
                     </button>
-                    {(profile?.rol === 'junta' || profile?.rol === 'admin_ampa') && (
+                    {profile?.rol === 'admin' && (
                         <Link
                             href="/dashboard/votaciones/nueva"
-                            className="flex items-center gap-2 rounded-[1.5rem] bg-indigo-600 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-200 active:scale-95"
+                            className="flex items-center gap-2 rounded-[1.5rem] bg-brand px-8 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-200 active:scale-95"
                         >
                             <Plus className="h-5 w-5" /> Nueva Votación
                         </Link>
@@ -85,8 +85,8 @@ export default async function VotacionesPage() {
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="max-w-xl">
                         <div className="flex items-center gap-2 mb-3">
-                            <Info className="h-5 w-5 text-indigo-400" />
-                            <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Importante</span>
+                            <Info className="h-5 w-5 text-brand/80" />
+                            <span className="text-xs font-black uppercase tracking-widest text-brand/80">Importante</span>
                         </div>
                         <h3 className="text-2xl font-black mb-2">Voto único y seguro</h3>
                         <p className="text-indigo-200 text-sm font-medium leading-relaxed">
@@ -115,7 +115,7 @@ export default async function VotacionesPage() {
                     </p>
                     <Link
                         href="/dashboard"
-                        className="inline-flex items-center gap-2 text-indigo-600 font-bold hover:underline"
+                        className="inline-flex items-center gap-2 text-brand font-bold hover:underline"
                     >
                         Volver al inicio <ChevronRight className="h-4 w-4" />
                     </Link>

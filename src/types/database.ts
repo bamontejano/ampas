@@ -46,7 +46,7 @@ export type Database = {
                     email: string
                     nombre_completo: string | null
                     avatar_url: string | null
-                    rol: 'familia' | 'junta' | 'admin_ampa' | 'superadmin'
+                    rol: 'admin' | 'user'
                     ampa_id: string | null
                     hijos: Json | null
                     bio: string | null
@@ -60,7 +60,7 @@ export type Database = {
                     email: string
                     nombre_completo?: string | null
                     avatar_url?: string | null
-                    rol?: 'familia' | 'junta' | 'admin_ampa' | 'superadmin'
+                    rol?: 'admin' | 'user'
                     ampa_id?: string | null
                     hijos?: Json | null
                     bio?: string | null
@@ -84,6 +84,9 @@ export type Database = {
                     foro_categoria_id: string | null
                     grupo_id: string | null
                     pinned: boolean
+                    video_url: string | null
+                    estado: string | null
+                    is_global: boolean
                 }
                 Insert: {
                     id?: string
@@ -99,6 +102,9 @@ export type Database = {
                     foro_categoria_id?: string | null
                     grupo_id?: string | null
                     pinned?: boolean
+                    video_url?: string | null
+                    estado?: string | null
+                    is_global?: boolean
                 }
                 Update: Partial<Database['public']['Tables']['posts']['Insert']>
             }
@@ -309,7 +315,7 @@ export type Database = {
         Views: Record<string, never>
         Functions: Record<string, never>
         Enums: {
-            rol_usuario: 'familia' | 'junta' | 'admin_ampa' | 'superadmin'
+            rol_usuario: 'admin' | 'user'
             plan_ampa: 'basico' | 'estandar' | 'premium'
         }
     }

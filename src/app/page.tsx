@@ -6,41 +6,41 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200">
         <div className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent">
-          AMPA Connect
+          AMPA IES Cristo del Rosario
         </div>
         <Link
           href="/auth/login"
-          className="text-sm font-bold text-indigo-600 hover:text-indigo-500"
+          className="text-sm font-bold text-brand hover:text-brand"
         >
           Iniciar sesión
         </Link>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-sm font-bold mb-8 border border-indigo-100">
-          <ShieldCheck className="w-4 h-4" /> Entorno privado y seguro
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-brand/10 text-brand text-sm font-bold mb-8 border border-brand/10">
+          <ShieldCheck className="w-4 h-4" /> Entorno privado y seguro para familias
         </div>
 
         <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight max-w-4xl leading-tight">
-          La comunidad psicoeducativa de <span className="text-indigo-600">tu centro escolar</span>
+          La comunidad psicoeducativa del <span className="text-brand">IES Cristo del Rosario</span>
         </h1>
 
         <p className="mt-6 text-xl text-slate-500 max-w-2xl">
-          Recursos premium, foros de apoyo familiar y herramientas de gestión educativa en un espacio único para tu AMPA.
+          Recursos premium, foros de apoyo familiar y herramientas de gestión educativa en un espacio único para nuestras familias.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link
             href="/auth/login"
-            className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-500 transition-transform active:scale-95 shadow-lg shadow-indigo-200"
+            className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-brand text-white font-bold text-lg hover:bg-brand transition-transform active:scale-95 shadow-lg shadow-indigo-200"
           >
-            Acceder a mi AMPA <ArrowRight className="w-5 h-5" />
+            Acceder a la plataforma <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
             href="/auth/register"
             className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-slate-700 font-bold border border-slate-200 hover:bg-slate-50 transition-colors"
           >
-            Tengo un código de invitación
+            Registrarse
           </Link>
         </div>
 

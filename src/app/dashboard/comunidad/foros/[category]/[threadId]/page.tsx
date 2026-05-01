@@ -88,7 +88,7 @@ export default async function ThreadPage({ params }: ThreadPageProps) {
                                 <div className="flex flex-col">
                                     <span className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                         {(thread.profiles as any)?.nombre_completo || 'Usuario de la comunidad'}
-                                        {(thread.profiles as any)?.rol === 'junta' && (
+                                        {(thread.profiles as any)?.rol === 'admin' && (
                                             <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase">Junta</span>
                                         )}
                                     </span>
@@ -159,7 +159,7 @@ export default async function ThreadPage({ params }: ThreadPageProps) {
                                     <div className="flex flex-col">
                                         <span className="text-sm font-bold text-slate-700">
                                             {comment.profiles?.nombre_completo || 'Usuario'}
-                                            {comment.profiles?.rol === 'junta' && (
+                                            {comment.profiles?.rol === 'admin' && (
                                                 <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase">Junta</span>
                                             )}
                                         </span>

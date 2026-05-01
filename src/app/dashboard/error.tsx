@@ -36,7 +36,7 @@ export default function DashboardError({
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <button
                         onClick={reset}
-                        className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-4 text-xs font-black text-white uppercase tracking-widest hover:bg-indigo-500 transition-all active:scale-95 shadow-lg shadow-indigo-100"
+                        className="flex items-center justify-center gap-2 rounded-2xl bg-brand px-8 py-4 text-xs font-black text-white uppercase tracking-widest hover:bg-brand transition-all active:scale-95 shadow-lg shadow-brand/10"
                     >
                         <RotateCcw className="h-4 w-4" />
                         Reintentar

@@ -2,6 +2,12 @@
 -- AMPA Connect — SQL ESENCIAL + NOTIFICACIONES
 -- =============================================================================
 
+-- ─── PREPARACIÓN DE COLUMNAS FALTANTES ──────────────────────────────────────
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS estado_suscripcion text DEFAULT 'pendiente',
+ADD COLUMN IF NOT EXISTS suscripcion_hasta timestamptz;
+
+
 -- ─── HELPERS ─────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION get_my_rol()
 RETURNS TEXT AS $$
@@ -140,17 +146,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Primero elminamos las versiones anteriores para evitar conflictos en el esquema
+DROP FUNCTION IF EXISTS procesar_registro_con_invitacion(text, uuid, text);
+DROP FUNCTION IF EXISTS procesar_registro_con_invitacion(text, uuid, text, text);
+
 CREATE OR REPLACE FUNCTION procesar_registro_con_invitacion(
     p_codigo text,
     p_user_id uuid,
-    p_nombre_completo text
+    p_nombre_completo text,
+    p_email text DEFAULT NULL
 )
 RETURNS json AS $$
 DECLARE
     v_invitacion record;
     v_es_admin boolean;
+    v_final_rol text;
+    v_email text;
 BEGIN
-    -- 1. Buscar la invitación (insensible a mayúsculas/minúsculas)
+    -- 1. Buscar la invitación
     SELECT * INTO v_invitacion
     FROM invitaciones
     WHERE UPPER(codigo) = UPPER(TRIM(p_codigo))
@@ -161,27 +174,40 @@ BEGIN
         RETURN json_build_object('success', false, 'error', 'Código de invitación no válido o inexistente');
     END IF;
 
-    IF v_invitacion.usado THEN
-        RETURN json_build_object('success', false, 'error', 'Este código de invitación ya ha sido utilizado');
+    IF v_invitacion.usado AND v_invitacion.usado_por != p_user_id THEN
+        RETURN json_build_object('success', false, 'error', 'Este código de invitación ya ha sido utilizado por otro usuario');
     END IF;
 
-    IF v_invitacion.expira_at IS NOT NULL AND v_invitacion.expira_at < now() THEN
-        RETURN json_build_object('success', false, 'error', 'Este código de invitación ha expirado');
-    END IF;
-
-    -- 3. Determinar si es un código de administrador
+    -- 3. Determinar el rol
     v_es_admin := v_invitacion.codigo LIKE 'ADMIN-%';
+    v_final_rol := CASE WHEN v_es_admin THEN 'admin_ampa' ELSE 'familia' END;
 
-    -- 4. Actualizar el perfil (SECURITY DEFINER para saltar RLS temporalmente aquí)
-    UPDATE profiles
-    SET 
-        ampa_id = v_invitacion.ampa_id,
-        onboarding_completado = true,
-        nombre_completo = COALESCE(p_nombre_completo, nombre_completo),
-        rol = CASE WHEN v_es_admin THEN 'admin_ampa'::rol_usuario ELSE rol END
-    WHERE id = p_user_id;
+    -- 4. Obtener email (del parámetro o de auth.users si es necesario)
+    v_email := COALESCE(p_email, (SELECT email FROM auth.users WHERE id = p_user_id));
 
-    -- 5. Marcar invitación como usada
+    IF v_email IS NULL THEN
+        -- Failsafe: Si no hay email, no podemos crear el perfil por el NOT NULL. 
+        -- Pero intentamos solo el update si el perfil ya existe.
+        UPDATE profiles
+        SET 
+            ampa_id = v_invitacion.ampa_id,
+            onboarding_completado = true,
+            nombre_completo = COALESCE(p_nombre_completo, profiles.nombre_completo),
+            rol = v_final_rol
+        WHERE id = p_user_id;
+    ELSE
+        -- 5. INSERT o UPDATE (UPSERT)
+        INSERT INTO profiles (id, ampa_id, onboarding_completado, nombre_completo, rol, email)
+        VALUES (p_user_id, v_invitacion.ampa_id, true, p_nombre_completo, v_final_rol, v_email)
+        ON CONFLICT (id) DO UPDATE
+        SET 
+            ampa_id = EXCLUDED.ampa_id,
+            onboarding_completado = true,
+            nombre_completo = COALESCE(p_nombre_completo, profiles.nombre_completo),
+            rol = EXCLUDED.rol;
+    END IF;
+
+    -- 6. Marcar invitación como usada
     UPDATE invitaciones
     SET 
         usado = true,
@@ -191,12 +217,14 @@ BEGIN
     RETURN json_build_object(
         'success', true, 
         'ampa_id', v_invitacion.ampa_id,
-        'es_admin', v_es_admin
+        'es_admin', v_es_admin,
+        'rol_asignado', v_final_rol,
+        'email_usado', v_email
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION procesar_registro_con_invitacion(text, uuid, text) TO anon, authenticated, postgres;
+GRANT EXECUTE ON FUNCTION procesar_registro_con_invitacion(text, uuid, text, text) TO anon, authenticated, postgres;
 
 CREATE OR REPLACE FUNCTION liberar_invitacion(p_id uuid)
 RETURNS void AS $$

@@ -17,7 +17,8 @@ export async function redeemInvitation(formData: FormData) {
     const { data: res, error: rpcError } = await supabase.rpc('procesar_registro_con_invitacion', {
         p_codigo: codigo,
         p_user_id: user.id,
-        p_nombre_completo: null // Ya tiene nombre en el perfil
+        p_nombre_completo: null, // Ya tiene nombre en el perfil
+        p_email: user.email || null,
     })
 
     if (rpcError) throw new Error(rpcError.message)

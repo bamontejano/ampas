@@ -49,13 +49,13 @@ export default async function ForosPage() {
                         <Link
                             key={cat.id}
                             href={`/dashboard/comunidad/foros/${cat.id}`}
-                            className="group relative flex flex-col rounded-3xl border border-slate-200 bg-white p-8 transition-all hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-50"
+                            className="group relative flex flex-col rounded-3xl border border-slate-200 bg-white p-8 transition-all hover:border-brand/20 hover:shadow-2xl hover:shadow-brand/5"
                         >
-                            <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${cat.color} text-white shadow-lg shadow-indigo-100 group-hover:scale-110 transition-transform`}>
+                            <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${cat.color} text-white shadow-lg shadow-brand/10 group-hover:scale-110 transition-transform`}>
                                 <cat.icon className="h-7 w-7" />
                             </div>
 
-                            <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                            <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-brand transition-colors">
                                 {cat.name}
                             </h3>
                             <p className="text-sm text-slate-500 leading-relaxed mb-8 flex-1">
@@ -69,7 +69,7 @@ export default async function ForosPage() {
                                     </span>
                                     <span>• {cat.lastPost}</span>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-brand group-hover:translate-x-1 transition-all" />
                             </div>
                         </Link>
                     ))}
@@ -83,7 +83,7 @@ export default async function ForosPage() {
                         <h2 className="text-3xl font-bold text-slate-900">Recursos Psicoeducativos</h2>
                         <p className="text-slate-500 mt-1">Guías, talleres y artículos seleccionados por tu AMPA.</p>
                     </div>
-                    <button className="text-indigo-600 font-bold hover:underline">Explorar biblioteca</button>
+                    <button className="text-brand font-bold hover:underline">Explorar biblioteca</button>
                 </div>
 
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -91,7 +91,7 @@ export default async function ForosPage() {
                         recursos.map((rec: any) => (
                             <div key={rec.id} className="group overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col">
                                 <div className="h-32 bg-slate-50 flex items-center justify-center relative overflow-hidden">
-                                    {rec.tipo === 'video' ? <Play className="h-10 w-10 text-indigo-400" /> : <BookOpen className="h-10 w-10 text-indigo-400" />}
+                                    {rec.tipo === 'video' ? <Play className="h-10 w-10 text-brand/40" /> : <BookOpen className="h-10 w-10 text-brand/40" />}
                                     <div className="absolute top-3 right-3">
                                         <span className="bg-white/80 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-100 uppercase text-slate-600">{rec.tipo}</span>
                                     </div>
@@ -99,7 +99,7 @@ export default async function ForosPage() {
                                 <div className="p-5 flex-1 flex flex-col">
                                     <h4 className="font-bold text-slate-900 mb-2 line-clamp-1">{rec.titulo}</h4>
                                     <p className="text-xs text-slate-500 line-clamp-2 mb-4 flex-1">{rec.descripcion}</p>
-                                    <button className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                    <button className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-50 text-slate-600 text-sm font-bold group-hover:bg-brand group-hover:text-white transition-all">
                                         {rec.tipo === 'pdf' ? <Download className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                                         {rec.tipo === 'pdf' ? 'Descargar' : 'Leer recurso'}
                                     </button>
@@ -118,7 +118,7 @@ export default async function ForosPage() {
             <div className="rounded-3xl bg-slate-900 p-8 text-white relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                     <div className="h-20 w-20 rounded-full border-4 border-slate-800 flex items-center justify-center bg-slate-800">
-                        <Users className="h-10 w-10 text-indigo-400" />
+                        <Users className="h-10 w-10 text-brand" />
                     </div>
                     <div>
                         <h4 className="text-xl font-bold">Espacio Seguro y Moderado</h4>

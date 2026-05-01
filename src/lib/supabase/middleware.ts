@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // Rutas protegidas - redirige a login si no está autenticado
+    // ─── Route protection ───────────────────────────────────────────────
     const isAuthRoute = request.nextUrl.pathname.startsWith('/auth')
     const isProtectedRoute =
         request.nextUrl.pathname.startsWith('/dashboard') ||

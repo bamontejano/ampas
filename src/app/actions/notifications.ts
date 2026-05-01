@@ -45,7 +45,7 @@ export async function sendNotificationToAMPA(ampaId: string, data: {
         .from('profiles')
         .select('id')
         .eq('ampa_id', ampaId)
-        .in('rol', ['admin_ampa', 'junta'])
+        .in('rol', ['admin', 'admin'])
 
     if (!profiles || profiles.length === 0) return
 

@@ -75,7 +75,7 @@ export async function createEvent(formData: any) {
 
     const profile = profileRaw as any
 
-    if (!profile || (profile.rol !== 'junta' && profile.rol !== 'admin_ampa')) {
+    if (!profile || (profile.rol !== 'admin' && profile.rol !== 'admin')) {
         throw new Error('No tienes permisos para crear eventos')
     }
 

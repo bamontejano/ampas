@@ -51,7 +51,7 @@ export default function PollCard({ encuesta }: PollCardProps) {
             {/* Header */}
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-1.5 text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                    <div className="flex items-center gap-2 rounded-full bg-brand/10 px-4 py-1.5 text-[10px] font-black text-brand uppercase tracking-widest">
                         <Vote className="h-3 w-3" />
                         {isPast ? 'Finalizada' : 'Votación Activa'}
                     </div>
@@ -90,12 +90,12 @@ export default function PollCard({ encuesta }: PollCardProps) {
                                     onClick={() => setSelectedOption(opcion.id)}
                                     disabled={isPending}
                                     className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-4 ${isSelected
-                                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 shadow-lg shadow-indigo-100'
+                                            ? 'border-indigo-600 bg-brand/10/50 text-brand shadow-lg shadow-brand/10'
                                             : 'border-slate-50 bg-slate-50 hover:border-slate-200 text-slate-600'
                                         }`}
                                 >
                                     <span className="font-bold text-sm">{opcion.texto}</span>
-                                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-slate-200 bg-white'
+                                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-indigo-600 bg-brand' : 'border-slate-200 bg-white'
                                         }`}>
                                         {isSelected && <Check className="h-4 w-4 text-white" />}
                                     </div>
@@ -103,15 +103,15 @@ export default function PollCard({ encuesta }: PollCardProps) {
                             ) : (
                                 <div className="space-y-1">
                                     <div className="flex items-center justify-between text-sm px-1 mb-1">
-                                        <span className={`font-bold ${isUserVoted ? 'text-indigo-600 flex items-center gap-1.5' : 'text-slate-700'}`}>
+                                        <span className={`font-bold ${isUserVoted ? 'text-brand flex items-center gap-1.5' : 'text-slate-700'}`}>
                                             {opcion.texto}
-                                            {isUserVoted && <div className="h-1.5 w-1.5 rounded-full bg-indigo-600" />}
+                                            {isUserVoted && <div className="h-1.5 w-1.5 rounded-full bg-brand" />}
                                         </span>
                                         <span className="text-slate-400 font-black">{percentage}%</span>
                                     </div>
                                     <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
                                         <div
-                                            className={`h-full transition-all duration-1000 ease-out rounded-full ${isUserVoted ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                                            className={`h-full transition-all duration-1000 ease-out rounded-full ${isUserVoted ? 'bg-brand' : 'bg-slate-300'}`}
                                             style={{ width: `${percentage}%` }}
                                         />
                                     </div>

@@ -17,10 +17,8 @@ export default async function AdminLayout({
         .eq('id', user.id)
         .single()
 
-    // Roles allowed in this section: admin_ampa, junta (only for invites), and superadmin
-    const allowedRoles = ['admin_ampa', 'junta', 'superadmin']
-
-    if (!profile?.rol || !allowedRoles.includes(profile.rol)) {
+    // Solo administradores pueden acceder a esta sección
+    if (profile?.rol !== 'admin') {
         redirect('/dashboard')
     }
 

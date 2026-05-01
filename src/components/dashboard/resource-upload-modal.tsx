@@ -11,7 +11,7 @@ export default function ResourceUploadModal({ ampaId }: { ampaId: string }) {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-black uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center gap-2 shadow-xl shadow-indigo-500/20 active:scale-95"
+                className="rounded-2xl bg-brand px-8 py-4 text-sm font-black uppercase tracking-widest hover:bg-brand transition-all flex items-center gap-2 shadow-xl shadow-indigo-500/20 active:scale-95"
             >
                 <Plus className="h-5 w-5" />
                 Subir Recurso
