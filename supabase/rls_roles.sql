@@ -51,14 +51,14 @@ CREATE POLICY "lectura de perfiles" ON profiles FOR SELECT TO authenticated
 USING (
   id = auth.uid() 
   OR get_my_rol() = 'superadmin' 
-  OR (ampa_id = get_my_ampa_id() AND get_my_rol() IN ('admin_ampa', 'junta'))
+  OR (ampa_id = get_my_ampa_id() AND get_my_rol() = 'admin')
 );
 
 CREATE POLICY "actualizacion de perfiles" ON profiles FOR UPDATE TO authenticated
 USING (
   id = auth.uid() 
   OR get_my_rol() = 'superadmin' 
-  OR (ampa_id = get_my_ampa_id() AND get_my_rol() = 'admin_ampa')
+  OR (ampa_id = get_my_ampa_id() AND get_my_rol() = 'admin')
 );
 
 
@@ -70,13 +70,13 @@ DROP POLICY IF EXISTS "admins crean invitaciones" ON invitaciones;
 DROP POLICY IF EXISTS "admins eliminan invitaciones" ON invitaciones;
 
 CREATE POLICY "admins leen invitaciones de su ampa" ON invitaciones FOR SELECT TO authenticated
-USING (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() IN ('admin_ampa', 'junta')));
+USING (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() = 'admin'));
 
 CREATE POLICY "admins crean invitaciones" ON invitaciones FOR INSERT TO authenticated
-WITH CHECK (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() IN ('admin_ampa', 'junta')));
+WITH CHECK (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() = 'admin'));
 
 CREATE POLICY "admins eliminan invitaciones" ON invitaciones FOR DELETE TO authenticated
-USING (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() IN ('admin_ampa', 'junta')));
+USING (get_my_rol() = 'superadmin' OR (ampa_id = get_my_ampa_id() AND get_my_rol() = 'admin'));
 
 
 -- ─── TABLA: notificaciones ───────────────────────────────────────────────────
@@ -180,7 +180,7 @@ BEGIN
 
     -- 3. Determinar el rol
     v_es_admin := v_invitacion.codigo LIKE 'ADMIN-%';
-    v_final_rol := CASE WHEN v_es_admin THEN 'admin_ampa' ELSE 'familia' END;
+    v_final_rol := CASE WHEN v_es_admin THEN 'admin' ELSE 'user' END;
 
     -- 4. Obtener email (del parámetro o de auth.users si es necesario)
     v_email := COALESCE(p_email, (SELECT email FROM auth.users WHERE id = p_user_id));

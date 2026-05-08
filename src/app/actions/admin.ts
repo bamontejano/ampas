@@ -136,7 +136,7 @@ export async function removeMember(memberId: string) {
 
 // ─── Invitation Actions ───────────────────────────────────────────────────────
 
-export async function createInvitations(count: number = 1) {
+export async function createInvitations(count: number = 1, role: 'user' | 'admin' = 'user') {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -155,12 +155,15 @@ export async function createInvitations(count: number = 1) {
     const ampaId = profile?.ampa_id
     if (!ampaId) throw new Error('No se encontró el ID del AMPA')
 
-    const newInvitations = Array.from({ length: count }).map(() => ({
-        ampa_id: ampaId,
-        creado_por: user.id,
-        codigo: Math.random().toString(36).substring(2, 8).toUpperCase(),
-        usado: false
-    }))
+    const newInvitations = Array.from({ length: count }).map(() => {
+        const baseCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+        return {
+            ampa_id: ampaId,
+            creado_por: user.id,
+            codigo: role === 'admin' ? `ADMIN-${baseCode}` : baseCode,
+            usado: false
+        }
+    })
 
     const { error } = await supabase
         .from('invitaciones')

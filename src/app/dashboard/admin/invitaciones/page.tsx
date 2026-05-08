@@ -8,10 +8,11 @@ import {
     CheckCircle2,
     Clock,
     Copy,
-    ArrowRight
+    ArrowRight,
+    ShieldCheck,
+    AlertTriangle
 } from 'lucide-react'
 import { createInvitations, deleteInvitation } from '@/app/actions/admin'
-import { revalidatePath } from 'next/cache'
 
 export default async function AdminInvitacionesPage() {
     const supabase = await createClient()
@@ -25,7 +26,7 @@ export default async function AdminInvitacionesPage() {
         .eq('id', user.id)
         .single()
 
-    if (!['admin', 'admin', 'admin'].includes(profile?.rol || '')) {
+    if (profile?.rol !== 'admin') {
         redirect('/dashboard')
     }
 
@@ -38,52 +39,66 @@ export default async function AdminInvitacionesPage() {
     return (
         <div className="max-w-6xl mx-auto space-y-10 pb-20">
             {/* Hero Admin */}
-            <header className="relative overflow-hidden rounded-[3rem] bg-brand p-10 md:p-16 text-white shadow-2xl shadow-brand/20" style={{ backgroundColor: 'var(--brand-primary)' }}>
+            <header className="relative overflow-hidden rounded-[3rem] bg-slate-900 p-10 md:p-16 text-white shadow-2xl shadow-slate-200">
                 <div className="relative z-10 max-w-2xl space-y-6">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-widest backdrop-blur-md">
-                        <Ticket className="h-4 w-4" />
-                        Panel de Control
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest backdrop-blur-md border border-white/10">
+                        <ShieldCheck className="h-4 w-4 text-brand" />
+                        Panel de Administración
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tighter">
-                        Gestión de Acceso <br />
-                        <span className="text-white/70">Códigos de Invitación</span>
+                        Control de Acceso <br />
+                        <span className="text-brand">Invitaciones v2</span>
                     </h1>
-                    <p className="text-lg text-white/80 font-medium leading-relaxed opacity-90">
-                        Genera códigos únicos para que las familias del {profile.ampas.colegio_nombre} puedan unirse a la plataforma de forma segura.
+                    <p className="text-lg text-white/60 font-medium leading-relaxed">
+                        Gestiona quién puede unirse a {profile.ampas.colegio_nombre}. Crea códigos para familias o para nuevos administradores.
                     </p>
 
-                    <div className="flex flex-wrap gap-4 pt-4">
-                        <form action={async () => {
-                            'use server'
-                            await createInvitations(1)
-                        }}>
-                            <button className="flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-sm font-black text-brand uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-xl">
-                                <Plus className="h-5 w-5" />
-                                Generar 1 Código
-                            </button>
-                        </form>
-                        <form action={async () => {
-                            'use server'
-                            await createInvitations(5)
-                        }}>
-                            <button className="flex items-center gap-2 rounded-2xl bg-white/20 px-6 py-4 text-sm font-black text-white uppercase tracking-widest hover:bg-white/30 transition-all active:scale-95 border border-white/20 backdrop-blur-sm">
-                                <Plus className="h-5 w-5" />
-                                Generar 5 Códigos
-                            </button>
-                        </form>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                        {/* Seccion Familias */}
+                        <div className="bg-white/5 rounded-3xl p-6 border border-white/10 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Invitaciones Familias</span>
+                            </div>
+                            <div className="flex gap-3">
+                                <form action={createInvitations.bind(null, 1, 'user')}>
+                                    <button className="flex items-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-black text-slate-900 uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95">
+                                        <Plus className="h-4 w-4" /> 1 Código
+                                    </button>
+                                </form>
+                                <form action={createInvitations.bind(null, 5, 'user')}>
+                                    <button className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:bg-white/20 transition-all active:scale-95 border border-white/10">
+                                        <Plus className="h-4 w-4" /> 5 Códigos
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {/* Seccion Admin */}
+                        <div className="bg-brand/10 rounded-3xl p-6 border border-brand/20 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-brand"></div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-brand">Acceso Administrativo</span>
+                            </div>
+                            <form action={createInvitations.bind(null, 1, 'admin')}>
+                                <button className="w-full flex items-center justify-center gap-3 rounded-2xl bg-brand px-5 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-brand/20">
+                                    <UserPlus className="h-4 w-4" /> Generar Código Admin
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
                 {/* Decorative Icon */}
-                <UserPlus className="absolute -right-10 -bottom-10 h-80 w-80 text-white/10 rotate-12" />
+                <Ticket className="absolute -right-10 -bottom-10 h-80 w-80 text-white/5 rotate-12" />
             </header>
 
             {/* List Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
                 <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Códigos Activos</h2>
-                        <p className="text-sm text-slate-500 font-medium">Lista de invitaciones generadas por tu equipo.</p>
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Historial de Códigos</h2>
+                        <p className="text-sm text-slate-500 font-medium">Gestiona y copia los códigos generados para tu comunidad.</p>
                     </div>
                     <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
                         <Ticket className="h-6 w-6" />
@@ -96,8 +111,8 @@ export default async function AdminInvitacionesPage() {
                             <tr className="bg-slate-50/50">
                                 <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Código</th>
                                 <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Estado</th>
+                                <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Destinatario</th>
                                 <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Fecha</th>
-                                <th className="px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-400">Uso</th>
                                 <th className="px-8 py-5 text-right text-xs font-black uppercase tracking-widest text-slate-400">Acción</th>
                             </tr>
                         </thead>
@@ -106,7 +121,11 @@ export default async function AdminInvitacionesPage() {
                                 <tr key={inv.id} className="hover:bg-slate-50/30 transition-colors group">
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-3">
-                                            <span className="font-mono text-lg font-black text-brand tracking-widest bg-brand/10 px-3 py-1 rounded-lg">
+                                            <span className={`font-mono text-lg font-black tracking-widest px-3 py-1 rounded-lg ${
+                                                inv.codigo.startsWith('ADMIN-') 
+                                                ? 'bg-slate-900 text-white' 
+                                                : 'bg-brand/10 text-brand'
+                                            }`}>
                                                 {inv.codigo}
                                             </span>
                                             <button className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-brand transition-all">
@@ -127,19 +146,26 @@ export default async function AdminInvitacionesPage() {
                                             </span>
                                         )}
                                     </td>
+                                    <td className="px-8 py-6">
+                                        {inv.codigo.startsWith('ADMIN-') ? (
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Administrador</span>
+                                                <span className="text-[9px] text-slate-400 font-bold italic">{inv.usado ? (inv as any).profiles?.nombre_completo : 'Pendiente'}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Familia</span>
+                                                <span className="text-[9px] text-slate-400 font-bold italic">{inv.usado ? (inv as any).profiles?.nombre_completo : 'Pendiente'}</span>
+                                            </div>
+                                        )}
+                                    </td>
                                     <td className="px-8 py-6 text-sm font-medium text-slate-500">
                                         {new Date(inv.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
                                     </td>
-                                    <td className="px-8 py-6 text-sm font-bold text-slate-700">
-                                        {inv.usado ? (inv as any).profiles?.nombre_completo : '---'}
-                                    </td>
                                     <td className="px-8 py-6 text-right">
                                         {!inv.usado && (
-                                            <form action={async () => {
-                                                'use server'
-                                                await deleteInvitation(inv.id)
-                                            }}>
-                                                <button className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all active:scale-90">
+                                            <form action={deleteInvitation.bind(null, inv.id)}>
+                                                <button className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all active:scale-90 ml-auto">
                                                     <Trash2 className="h-5 w-5" />
                                                 </button>
                                             </form>
@@ -147,47 +173,8 @@ export default async function AdminInvitacionesPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {invitaciones?.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="px-8 py-20 text-center">
-                                        <div className="flex flex-col items-center gap-4 text-slate-400">
-                                            <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center">
-                                                <Ticket className="h-10 w-10 opacity-20" />
-                                            </div>
-                                            <p className="font-bold text-lg">No hay códigos generados</p>
-                                            <p className="text-sm max-w-sm font-medium">Utiliza los botones de arriba para crear tus primeras invitaciones.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            {/* Quick Tips */}
-            <div className="grid md:grid-cols-2 gap-6">
-                <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-xl flex items-start gap-6">
-                    <div className="h-14 w-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
-                        <ArrowRight className="h-8 w-8" />
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="font-black text-slate-900 uppercase tracking-tight">Cómo funciona</h3>
-                        <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                            Copia un código disponible y envíalo a las familias por email o WhatsApp. Al registrarse, quedarán vinculados automáticamente a tu AMPA.
-                        </p>
-                    </div>
-                </div>
-                <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-xl flex items-start gap-6">
-                    <div className="h-14 w-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <Ticket className="h-8 w-8" />
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="font-black text-slate-900 uppercase tracking-tight">Seguridad</h3>
-                        <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                            Cada código es de un solo uso. Una vez utilizado, aparecerá el nombre de la persona que lo usó y no podrá ser compartido de nuevo.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
