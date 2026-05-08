@@ -61,12 +61,18 @@ export default async function AdminInvitacionesPage() {
                                 <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Invitaciones Familias</span>
                             </div>
                             <div className="flex gap-3">
-                                <form action={createInvitations.bind(null, 1, 'user')}>
+                                <form action={async () => {
+                                    'use server'
+                                    await createInvitations(1, 'user')
+                                }}>
                                     <button className="flex items-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-black text-slate-900 uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95">
                                         <Plus className="h-4 w-4" /> 1 Código
                                     </button>
                                 </form>
-                                <form action={createInvitations.bind(null, 5, 'user')}>
+                                <form action={async () => {
+                                    'use server'
+                                    await createInvitations(5, 'user')
+                                }}>
                                     <button className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:bg-white/20 transition-all active:scale-95 border border-white/10">
                                         <Plus className="h-4 w-4" /> 5 Códigos
                                     </button>
@@ -80,7 +86,10 @@ export default async function AdminInvitacionesPage() {
                                 <div className="h-2 w-2 rounded-full bg-brand"></div>
                                 <span className="text-[10px] font-black uppercase tracking-widest text-brand">Acceso Administrativo</span>
                             </div>
-                            <form action={createInvitations.bind(null, 1, 'admin')}>
+                            <form action={async () => {
+                                'use server'
+                                await createInvitations(1, 'admin')
+                            }}>
                                 <button className="w-full flex items-center justify-center gap-3 rounded-2xl bg-brand px-5 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-brand/20">
                                     <UserPlus className="h-4 w-4" /> Generar Código Admin
                                 </button>
@@ -164,7 +173,10 @@ export default async function AdminInvitacionesPage() {
                                     </td>
                                     <td className="px-8 py-6 text-right">
                                         {!inv.usado && (
-                                            <form action={deleteInvitation.bind(null, inv.id)}>
+                                            <form action={async () => {
+                                                'use server'
+                                                await deleteInvitation(inv.id)
+                                            }}>
                                                 <button className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all active:scale-90 ml-auto">
                                                     <Trash2 className="h-5 w-5" />
                                                 </button>
