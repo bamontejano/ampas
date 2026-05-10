@@ -50,7 +50,7 @@ export default function LoginPage() {
                                 name="email"
                                 type="email"
                                 required
-                                className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all"
+                                className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand transition-all placeholder:text-slate-400"
                                 placeholder="tu@email.com"
                             />
                         </div>
@@ -63,7 +63,7 @@ export default function LoginPage() {
                                 name="password"
                                 type="password"
                                 required
-                                className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all"
+                                className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand transition-all placeholder:text-slate-400"
                                 placeholder="••••••••"
                             />
                         </div>

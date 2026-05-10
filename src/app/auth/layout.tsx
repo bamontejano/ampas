@@ -18,7 +18,7 @@ export default function AuthLayout({
             className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4"
             style={styleObj}
         >
-            <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/50 bg-white/80 p-8 shadow-2xl backdrop-blur-sm">
+            <div className="w-full max-w-md space-y-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl">
                 
                 <div className="text-center">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-xl shadow-[var(--ampa-color)]/30" style={{ backgroundColor: 'var(--ampa-color)' }}>

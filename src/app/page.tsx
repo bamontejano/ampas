@@ -32,7 +32,7 @@ export default function Home() {
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link
             href="/auth/login"
-            className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-brand text-white font-bold text-lg hover:bg-brand transition-transform active:scale-95 shadow-lg shadow-indigo-200"
+            className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-brand text-white font-bold text-lg hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-indigo-900/20"
           >
             Acceder a la plataforma <ArrowRight className="w-5 h-5" />
           </Link>

@@ -60,7 +60,7 @@ export default function RegisterPage() {
                                     name="nombre"
                                     type="text"
                                     required
-                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all font-medium"
+                                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand transition-all font-medium placeholder:text-slate-400"
                                     placeholder="Ej: Ana García"
                                 />
                             </div>
@@ -74,7 +74,7 @@ export default function RegisterPage() {
                                     name="email"
                                     type="email"
                                     required
-                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all font-medium"
+                                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand transition-all font-medium placeholder:text-slate-400"
                                     placeholder="tu@email.com"
                                 />
                             </div>
@@ -88,7 +88,7 @@ export default function RegisterPage() {
                                     name="password"
                                     type="password"
                                     required
-                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all font-medium"
+                                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand transition-all font-medium placeholder:text-slate-400"
                                     placeholder="Mínimo 6 caracteres"
                                 />
                             </div>
@@ -101,7 +101,7 @@ export default function RegisterPage() {
                                     id="codigo_invitacion"
                                     name="codigo_invitacion"
                                     type="text"
-                                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand transition-all uppercase font-mono tracking-widest"
+                                    className="mt-1 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand transition-all uppercase font-mono tracking-widest placeholder:text-slate-400"
                                     placeholder="ADMIN-XJ72P9"
                                     maxLength={15}
                                 />

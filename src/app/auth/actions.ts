@@ -119,7 +119,7 @@ export async function register(formData: FormData) {
     // Procesamiento INMEDIATO del código (Esperamos 2.5s para asegurar que el trigger DB haya creado el perfil)
     // Usamos el RPC porque es SECURITY DEFINER; las llamadas directas .update() fallarían por RLS
     if (codigoInvitacion) {
-        await new Promise(resolve => setTimeout(resolve, 2500))
+        await new Promise(resolve => setTimeout(resolve, 3000))
         
         const { error: rpcError } = await supabase.rpc(
             'procesar_registro_con_invitacion',
