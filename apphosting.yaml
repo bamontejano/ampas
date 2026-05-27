@@ -2,58 +2,60 @@
 # Docs: https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Minimum instances to keep warm (0 = scale to zero, costs less)
   minInstances: 0
-  # Maximum concurrent requests per instance
   concurrency: 80
-  # CPU units (1 = 1 vCPU)
   cpu: 1
-  # Memory in MiB
   memoryMiB: 512
 
 env:
-  # Public Firebase config — safe to expose
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyBRSQ9bwbGoZ5YbH_OCLOmIJW3uoHIt600
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: ampa-connect.firebaseapp.com
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: ampa-connect
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: ampa-connect.firebasestorage.app
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "221118668519"
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:221118668519:web:1d5576c3fee55124344c42
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_SITE_URL
+    value: https://ampas--ampa-connect.europe-west4.hosted.app
     availability:
       - BUILD
       - RUNTIME
 
   - variable: NEXT_PUBLIC_ROOT_DOMAIN
+    value: ampas--ampa-connect.europe-west4.hosted.app
     availability:
       - BUILD
       - RUNTIME
 
-  # Secret variables — stored in Cloud Secret Manager, never exposed in code
   - variable: FIREBASE_CLIENT_EMAIL
     secret: firebase-client-email
     availability:
