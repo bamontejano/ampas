@@ -1,31 +1,30 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { revalidatePath } from 'next/cache'
-import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
 
 export async function markAsRead(notificationId: string) {
-    const supabase: any = await createClient()
-    const { error } = await (supabase.from('notificaciones' as any) as any)
-        .update({ leida: true })
-        .eq('id', notificationId)
-
-    if (error) throw new Error(error.message)
+    await adminDb.collection('notificaciones').doc(notificationId).update({ leida: true })
     revalidatePath('/dashboard')
 }
 
 export async function markAllAsRead() {
-    const supabase: any = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) return
 
-    const { error } = await (supabase.from('notificaciones' as any) as any)
-        .update({ leida: true })
-        .eq('perfil_id', user.id)
-        .eq('leida', false)
+    const snapshot = await adminDb.collection('notificaciones')
+        .where('perfil_id', '==', user.uid)
+        .where('leida', '==', false)
+        .get()
 
-    if (error) throw new Error(error.message)
+    if (snapshot.empty) return
+
+    const batch = adminDb.batch()
+    snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, { leida: true })
+    })
+
+    await batch.commit()
     revalidatePath('/dashboard')
 }
 
@@ -35,34 +34,36 @@ export async function sendNotificationToAMPA(ampaId: string, data: {
     tipo: 'evento' | 'votacion' | 'comunidad' | 'sistema'
     enlace?: string
 }) {
-    const supabase: any = await createClient()
-
-    // Si no hay ampaId, no hay a quién notificar
     if (!ampaId) return
 
-    // Get all admin/junta profiles in this AMPA to notify them
-    const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('ampa_id', ampaId)
-        .in('rol', ['admin', 'admin'])
+    const snapshot = await adminDb.collection('profiles')
+        .where('ampa_id', '==', ampaId)
+        .where('rol', '==', 'admin')
+        .get()
 
-    if (!profiles || profiles.length === 0) return
+    if (snapshot.empty) return
 
-    const notifications = (profiles as any[]).map(profile => ({
-        perfil_id: profile.id,
-        ampa_id: ampaId,
-        titulo: data.titulo,
-        contenido: data.contenido,
-        tipo: data.tipo,
-        enlace: data.enlace || null,
-        leida: false
-    }))
+    const batch = adminDb.batch()
+    snapshot.docs.forEach(doc => {
+        const notifRef = adminDb.collection('notificaciones').doc()
+        batch.set(notifRef, {
+            id: notifRef.id,
+            perfil_id: doc.id,
+            ampa_id: ampaId,
+            titulo: data.titulo,
+            contenido: data.contenido,
+            tipo: data.tipo,
+            enlace: data.enlace || null,
+            leida: false,
+            created_at: new Date().toISOString()
+        })
+    })
 
-    const { error } = await (supabase.from('notificaciones' as any) as any)
-        .insert(notifications)
-
-    if (error) console.error('Error sending notifications:', error)
+    try {
+        await batch.commit()
+    } catch (error) {
+        console.error('Error sending notifications:', error)
+    }
 }
 
 export async function sendNotificationToUser(userId: string, ampaId: string, data: {
@@ -71,18 +72,20 @@ export async function sendNotificationToUser(userId: string, ampaId: string, dat
     tipo: 'evento' | 'votacion' | 'comunidad' | 'sistema'
     enlace?: string
 }) {
-    const supabase: any = await createClient()
-
-    const { error } = await (supabase.from('notificaciones' as any) as any)
-        .insert({
+    try {
+        const notifRef = adminDb.collection('notificaciones').doc()
+        await notifRef.set({
+            id: notifRef.id,
             perfil_id: userId,
             ampa_id: ampaId,
             titulo: data.titulo,
             contenido: data.contenido,
             tipo: data.tipo,
             enlace: data.enlace || null,
-            leida: false
+            leida: false,
+            created_at: new Date().toISOString()
         })
-
-    if (error) console.error('Error sending notification to user:', error)
+    } catch (error) {
+        console.error('Error sending notification to user:', error)
+    }
 }

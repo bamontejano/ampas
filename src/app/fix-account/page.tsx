@@ -1,29 +1,20 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import { Ticket, Shield, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { redeemInvitation } from '@/app/actions/onboarding'
 
 export default async function FixAccountPageRoot() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) redirect('/auth/login')
 
-    // Usamos una consulta simple sin joins que puedan fallar por RLS recursivo
-    const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     // Intentamos cargar la AMPA por separado
     let ampa = null
     if (profile?.ampa_id) {
-        const { data: ampaData } = await supabase
-            .from('ampas')
-            .select('*')
-            .eq('id', profile.ampa_id)
-            .maybeSingle()
-        ampa = ampaData
+        const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+        ampa = ampaDoc.exists ? ampaDoc.data() : null
     }
 
     return (

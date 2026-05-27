@@ -1,29 +1,26 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import { Plus, Trash2, ExternalLink, Gamepad2, Info } from 'lucide-react'
 import { createAmpaApp, deleteAmpaApp } from '@/app/actions/admin'
 
 export default async function AdminAppsPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     if (!profile?.ampa_id) {
         redirect('/dashboard')
     }
 
-    const { data: apps } = await supabase
-        .from('ampa_apps')
-        .select('*')
-        .eq('ampa_id', profile.ampa_id)
-        .order('created_at', { ascending: false })
+    const appsSnapshot = await adminDb.collection('ampa_apps')
+        .where('ampa_id', '==', profile.ampa_id)
+        .orderBy('created_at', 'desc')
+        .get()
+
+    const apps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
 
     return (
         <div className="space-y-8">

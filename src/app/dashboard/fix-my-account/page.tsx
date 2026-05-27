@@ -1,20 +1,20 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import { Ticket, Shield, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { redeemInvitation } from '@/app/actions/onboarding'
 
 export default async function FixAccountPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*, ampas(*)')
-        .eq('id', user.id)
-        .maybeSingle()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
-    const ampa = profile?.ampas
+    let ampa = null
+    if (profile?.ampa_id) {
+        const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+        ampa = ampaDoc.exists ? ampaDoc.data() : null
+    }
 
     return (
         <div className="max-w-2xl mx-auto py-12 px-4 space-y-8">
@@ -30,17 +30,17 @@ export default async function FixAccountPage() {
                         <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
                                 <CheckCircle2 className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-black uppercase tracking-widest text-slate-400">Perfil en BD</p>
-                                <p className="font-bold text-slate-900">{profile ? 'Encontrado' : 'No existe'}</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Tu ID</p>
-                            <p className="font-mono text-[10px] text-slate-500">{user.id}</p>
-                        </div>
-                    </div>
+                             </div>
+                             <div>
+                                 <p className="text-xs font-black uppercase tracking-widest text-slate-400">Perfil en BD</p>
+                                 <p className="font-bold text-slate-900">{profile ? 'Encontrado' : 'No existe'}</p>
+                             </div>
+                         </div>
+                         <div className="text-right">
+                             <p className="text-xs font-black uppercase tracking-widest text-slate-400">Tu ID</p>
+                             <p className="font-mono text-[10px] text-slate-500">{user.uid}</p>
+                         </div>
+                     </div>
 
                     <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${ampa ? 'bg-brand/20 text-brand' : 'bg-slate-100 text-slate-400'}`}>

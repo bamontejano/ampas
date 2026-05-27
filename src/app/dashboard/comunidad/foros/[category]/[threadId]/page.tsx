@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb } from '@/lib/firebase/admin'
 import Link from 'next/link'
 import { ChevronLeft, Heart, MessageSquare, Share2, MoreVertical, User } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -11,40 +11,55 @@ interface ThreadPageProps {
 
 export default async function ThreadPage({ params }: ThreadPageProps) {
     const { category, threadId } = await params
-    const supabase = await createClient()
 
     // Fetch post details
-    const { data: threadRaw, error } = await supabase
-        .from('posts')
-        .select(`
-            *,
-            profiles:autor_id (
-                nombre_completo,
-                avatar_url,
-                rol,
-                bio
-            )
-        `)
-        .eq('id', threadId)
-        .single()
+    const threadDoc = await adminDb.collection('posts').doc(threadId).get()
+    const threadRaw = threadDoc.exists ? { id: threadDoc.id, ...threadDoc.data() } : null
 
-    const thread = threadRaw as any
+    let thread = null
+    if (threadRaw) {
+        const authorDoc = (threadRaw as any).autor_id 
+            ? await adminDb.collection('profiles').doc((threadRaw as any).autor_id).get() 
+            : null
+        thread = {
+            ...threadRaw,
+            profiles: authorDoc?.exists ? authorDoc.data() : null
+        } as any
+    }
 
     // Fetch comments
-    const { data: comments } = await supabase
-        .from('comentarios')
-        .select(`
-            *,
-            profiles:autor_id (
-                nombre_completo,
-                avatar_url,
-                rol
-            )
-        `)
-        .eq('post_id', threadId)
-        .order('created_at', { ascending: true })
+    let comments: any[] = []
+    if (thread) {
+        const commentsSnapshot = await adminDb.collection('comentarios')
+            .where('post_id', '==', threadId)
+            .get()
+        const commentsRaw = commentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
-    if (error || !thread) {
+        // Fetch commenter profiles
+        const commenterIds = [...new Set(commentsRaw.map((c: any) => c.autor_id).filter(Boolean))]
+        const profileMap: Record<string, any> = {}
+        if (commenterIds.length > 0) {
+            const docs = await Promise.all(
+                commenterIds.map(id => adminDb.collection('profiles').doc(id).get())
+            )
+            docs.forEach(doc => {
+                if (doc.exists) profileMap[doc.id] = doc.data()
+            })
+        }
+
+        comments = commentsRaw.map((c: any) => ({
+            ...c,
+            profiles: profileMap[c.autor_id] ? {
+                nombre_completo: profileMap[c.autor_id].nombre_completo,
+                avatar_url: profileMap[c.autor_id].avatar_url,
+                rol: profileMap[c.autor_id].rol
+            } : null
+        }))
+
+        comments.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
+    }
+
+    if (!thread) {
         return (
             <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4">No se pudo encontrar el hilo</h2>

@@ -1,10 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
-import OnboardingClient from '@/components/onboarding/onboarding-client'
 
 export default async function OnboardingPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 

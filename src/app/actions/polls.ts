@@ -1,9 +1,8 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { revalidatePath } from 'next/cache'
-import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
+import * as admin from 'firebase-admin'
 import { sendNotificationToAMPA } from './notifications'
 
 export async function createPoll(data: {
@@ -13,55 +12,44 @@ export async function createPoll(data: {
     termina_at?: string
     anonima?: boolean
 }) {
-    const supabase: any = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autorizado')
 
-    // Verificar rol
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('rol, ampa_id')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
-    const profile = profileRaw as any
-
-    if (!profile || (profile.rol !== 'admin' && profile.rol !== 'admin')) {
+    if (!profile || profile.rol !== 'admin') {
         throw new Error('No tienes permisos para crear votaciones')
     }
 
-    // 1. Crear la encuesta
-    const { data: encuestaRaw, error: encuestaError } = await supabase
-        .from('encuestas' as any)
-        .insert({
-            ampa_id: profile.ampa_id as string,
-            creador_id: user.id,
-            pregunta: data.pregunta,
-            descripcion: data.descripcion,
-            termina_at: data.termina_at,
-            anonima: data.anonima || false
-        } as any)
-        .select()
-        .single()
+    const batch = adminDb.batch()
+    const encuestaRef = adminDb.collection('encuestas').doc()
 
-    const encuesta = encuestaRaw as any
+    batch.set(encuestaRef, {
+        id: encuestaRef.id,
+        ampa_id: profile.ampa_id,
+        creador_id: user.uid,
+        pregunta: data.pregunta,
+        descripcion: data.descripcion || null,
+        termina_at: data.termina_at || null,
+        anonima: data.anonima || false,
+        activa: true,
+        created_at: new Date().toISOString()
+    })
 
-    if (encuestaError) throw new Error(encuestaError.message)
+    data.opciones.forEach(texto => {
+        const opcionRef = adminDb.collection('encuesta_opciones').doc()
+        batch.set(opcionRef, {
+            id: opcionRef.id,
+            encuesta_id: encuestaRef.id,
+            texto,
+            votos_count: 0
+        })
+    })
 
-    // 2. Crear las opciones
-    const opcionesInsert = data.opciones.map(texto => ({
-        encuesta_id: encuesta.id,
-        texto,
-        votos_count: 0
-    }))
+    await batch.commit()
 
-    const { error: opcionesError } = await supabase
-        .from('encuesta_opciones' as any)
-        .insert(opcionesInsert as any)
-
-    if (opcionesError) throw new Error(opcionesError.message)
-
-    await sendNotificationToAMPA(profile.ampa_id as string, {
+    await sendNotificationToAMPA(profile.ampa_id, {
         titulo: 'Nueva votación abierta',
         contenido: `Participa en: ${data.pregunta}`,
         tipo: 'votacion',
@@ -72,64 +60,42 @@ export async function createPoll(data: {
 }
 
 export async function castVote(encuestaId: string, opcionId: string) {
-    const supabase: any = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('Debes iniciar sesión para votar')
 
-    // 1. Verificar si ya votó
-    const { data: yaVoto } = await supabase
-        .from('encuesta_votos' as any)
-        .select('id')
-        .eq('encuesta_id', encuestaId)
-        .eq('perfil_id', user.id)
-        .single()
+    const votoId = `${encuestaId}_${user.uid}`
+    const votoRef = adminDb.collection('encuesta_votos').doc(votoId)
+    const encuestaRef = adminDb.collection('encuestas').doc(encuestaId)
+    const opcionRef = adminDb.collection('encuesta_opciones').doc(opcionId)
 
-    if (yaVoto) throw new Error('Ya has participado en esta votación')
+    await adminDb.runTransaction(async (t) => {
+        const votoDoc = await t.get(votoRef)
+        if (votoDoc.exists) throw new Error('Ya has participado en esta votación')
 
-    // 2. Verificar si la votación sigue activa y dentro de plazo
-    const { data: encuesta, error: fetchError } = await supabase
-        .from('encuestas' as any)
-        .select('activa, termina_at')
-        .eq('id', encuestaId)
-        .single()
+        const encuestaDoc = await t.get(encuestaRef)
+        if (!encuestaDoc.exists) throw new Error('No se pudo encontrar la votación')
 
-    if (fetchError || !encuesta) throw new Error('No se pudo encontrar la votación')
+        const encuesta = encuestaDoc.data()!
+        if (!encuesta.activa) {
+            throw new Error('Esta votación ha sido cerrada por la junta directiva')
+        }
 
-    if (!encuesta.activa) {
-        throw new Error('Esta votación ha sido cerrada por la junta directiva')
-    }
+        if (encuesta.termina_at && new Date(encuesta.termina_at) < new Date()) {
+            throw new Error('El plazo de votación para esta encuesta ha finalizado')
+        }
 
-    if (encuesta.termina_at && new Date(encuesta.termina_at) < new Date()) {
-        throw new Error('El plazo de votación para esta encuesta ha finalizado')
-    }
-
-    // 3. Registrar el voto
-    const { error: votoError } = await supabase
-        .from('encuesta_votos' as any)
-        .insert({
+        t.set(votoRef, {
+            id: votoId,
             encuesta_id: encuestaId,
             opcion_id: opcionId,
-            perfil_id: user.id
-        } as any)
+            perfil_id: user.uid,
+            created_at: new Date().toISOString()
+        })
 
-    if (votoError) throw new Error('Error al registrar tu voto. Inténtalo de nuevo.')
-
-    // 4. Incrementar contador de la opción de forma atómica mediante RPC
-    const { error: incrementError } = await (supabase as any).rpc('increment_voto_count', { row_id: opcionId })
-
-    if (incrementError) {
-        console.error('Error en RPC increment_voto_count:', incrementError)
-        // Fallback manual por si el RPC no está en la DB todavía
-        const { data: opcion } = await supabase
-            .from('encuesta_opciones' as any)
-            .select('votos_count')
-            .eq('id', opcionId)
-            .single()
-
-        await (supabase.from('encuesta_opciones' as any) as any)
-            .update({ votos_count: ((opcion as any)?.votos_count || 0) + 1 })
-            .eq('id', opcionId)
-    }
+        t.update(opcionRef, {
+            votos_count: admin.firestore.FieldValue.increment(1)
+        })
+    })
 
     revalidatePath('/dashboard/votaciones')
 }

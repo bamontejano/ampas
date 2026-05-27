@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import { logout } from '@/app/auth/actions'
 import {
@@ -26,39 +26,42 @@ export default async function DashboardLayout({
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) redirect('/auth/login')
 
     let profile = null
     let ampa = null
 
     try {
-        const { data: profileRaw, error: profileError } = await supabase
-            .from('profiles')
-            .select('*, ampas(*)')
-            .eq('id', user.id)
-            .maybeSingle()
-
-        if (profileRaw) {
-            profile = profileRaw as any
-            ampa = profile?.ampas
+        const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+        if (profileDoc.exists) {
+            profile = profileDoc.data()
+            if (profile?.ampa_id) {
+                const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+                if (ampaDoc.exists) {
+                    ampa = ampaDoc.data()
+                }
+            }
         }
     } catch (e) {
-        console.error('Error in DashboardLayout:', e)
+        console.error('Error in DashboardLayout fetching profile:', e)
     }
 
-    const ampaName = 'AMPA IES Cristo del Rosario'
+    const ampaName = ampa?.nombre || 'Mi AMPA'
 
     // Fetch notifications
-    const { data: notificationsRaw } = await supabase
-        .from('notificaciones' as any)
-        .select('*')
-        .eq('perfil_id', user?.id as string)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-    const notifications = notificationsRaw as any[] || []
+    let notifications: any[] = []
+    try {
+        const notifSnapshot = await adminDb.collection('notificaciones')
+            .where('perfil_id', '==', user.uid)
+            .orderBy('created_at', 'desc')
+            .limit(10)
+            .get()
+        
+        notifications = notifSnapshot.docs.map(doc => doc.data())
+    } catch(e) {
+        console.error('Error in DashboardLayout fetching notifs:', e)
+    }
 
     const navItems = [
         { name: 'Inicio', href: '/dashboard', icon: Home },
@@ -81,7 +84,7 @@ export default async function DashboardLayout({
         { name: 'Invitaciones', href: '/dashboard/admin/invitaciones', icon: Ticket },
     ] : []
 
-    const primaryColor = '#4f46e5'
+    const primaryColor = ampa?.color_primario || '#4f46e5'
 
     return (
         <div className="flex min-h-screen bg-slate-50/50" style={{ ['--brand-primary' as any]: primaryColor }}>
@@ -101,7 +104,7 @@ export default async function DashboardLayout({
                             {ampa?.logo_url ? (
                                 <img src={ampa.logo_url} alt="Logo" className="w-full h-full object-cover" />
                             ) : (
-                                <span className="font-bold">A</span>
+                                <span className="font-bold">{ampaName.charAt(0)}</span>
                             )}
                         </div>
                         <span className="text-sm font-black text-slate-900 tracking-tight truncate">
@@ -152,7 +155,7 @@ export default async function DashboardLayout({
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm font-semibold text-slate-900 truncate">{profile?.nombre_completo}</p>
                                 <p className="text-xs truncate font-semibold"
-                                    style={{ color: rol === 'admin' ? '#4f46e5' : '#6b7280' }}>
+                                    style={{ color: rol === 'admin' ? 'var(--brand-primary)' : '#6b7280' }}>
                                     {rol === 'admin' ? 'Administrador' : 'Miembro'}
                                 </p>
                             </div>
@@ -177,18 +180,18 @@ export default async function DashboardLayout({
                              {ampa?.logo_url ? (
                                 <img src={ampa.logo_url} alt="Logo" className="w-full h-full object-cover" />
                             ) : (
-                                <span className="font-bold text-xs">A</span>
+                                <span className="font-bold text-xs">{ampaName.charAt(0)}</span>
                             )}
                         </div>
                         <h1 className="text-sm font-black text-slate-900 truncate">{ampaName}</h1>
                     </div>
                     <div className="hidden lg:block text-slate-500 text-sm font-medium italic">
-                        Comunidad IES Cristo del Rosario
+                        Comunidad {ampa?.colegio_nombre || ampaName}
                     </div>
                     <div className="flex items-center gap-4">
                         <NotificationBell
                             initialNotifications={notifications}
-                            perfilId={user?.id as string}
+                            perfilId={user.uid}
                         />
                         <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 lg:hidden font-bold">
                             {profile?.nombre_completo?.[0] || 'U'}

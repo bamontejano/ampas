@@ -2,32 +2,48 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { login } from '../actions'
 import { AlertCircle, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { auth } from '@/lib/firebase/client'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 
 export default function LoginPage() {
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const router = useRouter()
 
-    async function handleLogin(formData: FormData) {
+    async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
         setLoading(true)
         setError(null)
 
-        // Llamamos a la Server Action
-        const result = await login(formData)
+        const formData = new FormData(e.currentTarget)
+        const email = formData.get('email') as string
+        const password = formData.get('password') as string
 
-        // Si devuelve algo, es que hubo error (si tiene éxito redirige y no llega aquí)
-        if (result?.error) {
-            if (result.error.includes('Invalid login credentials')) {
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            const token = await userCredential.user.getIdToken()
+            
+            // Set session cookie
+            await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            })
+
+            router.push('/dashboard')
+            router.refresh()
+        } catch (err: any) {
+            console.error(err)
+            if (err.code === 'auth/invalid-credential') {
                 setError('Email o contraseña incorrectos.')
-            } else if (result.error.includes('Email not confirmed')) {
-                setError('Debes confirmar tu email antes de entrar.')
             } else {
-                setError(result.error)
+                setError(err.message)
             }
+        } finally {
+            setLoading(false)
         }
-
-        setLoading(false)
     }
 
     return (
@@ -39,7 +55,7 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                <form action={handleLogin} className="mt-8 space-y-6">
+                <form onSubmit={handleLogin} className="mt-8 space-y-6">
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">

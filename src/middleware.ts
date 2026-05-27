@@ -1,5 +1,5 @@
 import { type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { updateSession } from '@/lib/firebase/middleware'
 
 export async function middleware(request: NextRequest) {
     return await updateSession(request)
@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
     matcher: [
         /*
-         * Excluye archivos estáticos y rutas de la API excepto las de Supabase Auth
+         * Excluye archivos estáticos y rutas de la API excepto las de Firebase Auth
          */
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],

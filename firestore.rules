@@ -1,0 +1,146 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ──────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function getUserProfile() {
+      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserProfile().rol == 'admin';
+    }
+
+    function isSameAmpa(ampaId) {
+      return isAuthenticated() && getUserProfile().ampa_id == ampaId;
+    }
+
+    function isAdminOfAmpa(ampaId) {
+      return isAdmin() && getUserProfile().ampa_id == ampaId;
+    }
+
+    // ─── Profiles ─────────────────────────────────────────────────────────────
+
+    match /profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if false; // Never delete profiles directly
+    }
+
+    // ─── AMPAs ────────────────────────────────────────────────────────────────
+
+    match /ampas/{ampaId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOfAmpa(ampaId);
+    }
+
+    // ─── Posts ────────────────────────────────────────────────────────────────
+
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isSameAmpa(request.resource.data.ampa_id);
+      allow update: if isOwner(resource.data.autor_id) || isAdmin();
+      allow delete: if isOwner(resource.data.autor_id) || isAdmin();
+    }
+
+    // ─── Comentarios ──────────────────────────────────────────────────────────
+
+    match /comentarios/{comentarioId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource.data.autor_id);
+      allow delete: if isOwner(resource.data.autor_id) || isAdmin();
+    }
+
+    // ─── Post Likes ───────────────────────────────────────────────────────────
+
+    match /post_likes/{likeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.perfil_id);
+      allow delete: if isAuthenticated() && isOwner(resource.data.perfil_id);
+    }
+
+    // ─── Eventos ──────────────────────────────────────────────────────────────
+
+    match /eventos/{eventoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ─── Asistencias a Eventos ────────────────────────────────────────────────
+
+    match /asistencias_eventos/{asistenciaId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.perfil_id);
+      allow delete: if isAuthenticated() && isOwner(resource.data.perfil_id);
+    }
+
+    // ─── Encuestas ────────────────────────────────────────────────────────────
+
+    match /encuestas/{encuestaId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /encuesta_opciones/{opcionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAuthenticated(); // votes update votos_count
+      allow delete: if isAdmin();
+    }
+
+    match /encuesta_votos/{votoId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.perfil_id);
+      allow delete: if false; // Votes are immutable
+    }
+
+    // ─── Recursos ─────────────────────────────────────────────────────────────
+
+    match /recursos/{recursoId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Notificaciones ───────────────────────────────────────────────────────
+
+    match /notificaciones/{notifId} {
+      allow read: if isAuthenticated() && (
+        resource.data.perfil_id == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && resource.data.perfil_id == request.auth.uid;
+      allow create: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ─── Invitaciones ─────────────────────────────────────────────────────────
+
+    match /invitaciones/{invId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAuthenticated(); // Users redeem invitations
+      allow delete: if isAdmin();
+    }
+
+    // ─── AMPA Apps ────────────────────────────────────────────────────────────
+
+    match /ampa_apps/{appId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

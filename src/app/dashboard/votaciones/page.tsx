@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     Vote,
     Plus,
@@ -12,45 +12,61 @@ import Link from 'next/link'
 import PollCard from '@/components/dashboard/poll-card'
 
 export default async function VotacionesPage() {
-    const supabase: any = await createClient()
+    const user = await getUser()
+
+    if (!user) return null
 
     // Get current user profile for ampa_id
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user?.id as string)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
-    const profile = profileRaw as any
+    // Fetch active polls
+    const encuestasSnapshot = await adminDb.collection('encuestas')
+        .where('ampa_id', '==', profile?.ampa_id || '')
+        .where('activa', '==', true)
+        .get()
+    const encuestasRaw = encuestasSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
 
-    // Fetch active polls with their options
-    const { data: encuestasRaw } = await supabase
-        .from('encuestas')
-        .select(`
-            *,
-            encuesta_opciones (*)
-        `)
-        .eq('ampa_id', profile?.ampa_id as string)
-        .eq('activa', true)
-        .order('created_at', { ascending: false })
+    // Fetch options for active polls
+    let opcionesRaw: any[] = []
+    if (encuestasRaw.length > 0) {
+        const pollIds = encuestasRaw.map(e => e.id)
+        // If there are more than 10, Firestore 'in' query has a limit of 10.
+        // Let's batch/chunk it just in case, or do a simple in query if <= 10.
+        // Assuming usually <= 10 active polls.
+        const chunks = []
+        for (let i = 0; i < pollIds.length; i += 10) {
+            chunks.push(pollIds.slice(i, i + 10))
+        }
+        const optionDocs = await Promise.all(
+            chunks.map(chunk => 
+                adminDb.collection('encuesta_opciones')
+                    .where('encuesta_id', 'in', chunk)
+                    .get()
+            )
+        )
+        opcionesRaw = optionDocs.flatMap(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+    }
 
     // Fetch current user's votes
-    const { data: misVotosRaw } = await supabase
-        .from('encuesta_votos')
-        .select('encuesta_id, opcion_id')
-        .eq('perfil_id', user?.id as string)
+    const misVotosSnapshot = await adminDb.collection('encuesta_votos')
+        .where('perfil_id', '==', user.uid)
+        .get()
+    const misVotosRaw = misVotosSnapshot.docs.map(doc => doc.data())
 
-    const misVotos = new Map((misVotosRaw as any[])?.map(v => [v.encuesta_id, v.opcion_id]))
+    const misVotos = new Map(misVotosRaw.map(v => [v.encuesta_id, v.opcion_id]))
 
     // Process encuestas to include voting status for current user
-    const encuestas = (encuestasRaw as any[])?.map(encuesta => ({
-        ...encuesta,
-        opciones: encuesta.encuesta_opciones,
-        votos_totales: encuesta.encuesta_opciones.reduce((acc: number, op: any) => acc + (op.votos_count || 0), 0),
-        ya_voto: misVotos.has(encuesta.id),
-        voto_opcion_id: misVotos.get(encuesta.id)
-    }))
+    const encuestas = encuestasRaw.map(encuesta => {
+        const opciones = opcionesRaw.filter(op => op.encuesta_id === encuesta.id)
+        return {
+            ...encuesta,
+            opciones: opciones,
+            votos_totales: opciones.reduce((acc: number, op: any) => acc + (op.votos_count || 0), 0),
+            ya_voto: misVotos.has(encuesta.id),
+            voto_opcion_id: misVotos.get(encuesta.id)
+        }
+    })
 
     return (
         <div className="space-y-12 pb-16">

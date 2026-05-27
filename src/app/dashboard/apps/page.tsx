@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     Gamepad2,
     ExternalLink,
@@ -11,25 +11,21 @@ import {
 import Link from 'next/link'
 
 export default async function AppsIntegradasPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) return null
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
-    const { data: apps } = await supabase
-        .from('ampa_apps')
-        .select('*')
-        .eq('ampa_id', profile?.ampa_id)
-        .order('created_at', { ascending: false })
+    const appsSnapshot = await adminDb.collection('ampa_apps')
+        .where('ampa_id', '==', profile?.ampa_id || '')
+        .orderBy('created_at', 'desc')
+        .get()
+    const apps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
     const hasApps = apps && apps.length > 0
-    const isOwner = ['admin', 'admin'].includes(profile?.rol || '')
+    const isOwner = profile?.rol === 'admin'
 
     return (
         <div className="space-y-10 pb-16">

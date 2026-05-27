@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import {
     Ticket,
@@ -15,26 +15,47 @@ import {
 import { createInvitations, deleteInvitation } from '@/app/actions/admin'
 
 export default async function AdminInvitacionesPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*, ampas(*)')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     if (profile?.rol !== 'admin') {
         redirect('/dashboard')
     }
 
-    const { data: invitaciones } = await supabase
-        .from('invitaciones')
-        .select('*, profiles:usado_por(nombre_completo)')
-        .eq('ampa_id', profile.ampa_id)
-        .order('created_at', { ascending: false })
+    // Fetch AMPA data separately
+    let ampa = null
+    if (profile?.ampa_id) {
+        const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+        ampa = ampaDoc.exists ? ampaDoc.data() : null
+    }
+
+    // Fetch invitaciones
+    const invitacionesSnapshot = await adminDb.collection('invitaciones')
+        .where('ampa_id', '==', profile.ampa_id)
+        .orderBy('created_at', 'desc')
+        .get()
+
+    const invitacionesRaw = invitacionesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+
+    // Batch fetch usado_por profiles
+    const usadoPorIds = [...new Set(invitacionesRaw.map(inv => inv.usado_por).filter(Boolean))]
+    const profileDocs = await Promise.all(
+        usadoPorIds.map(id => adminDb.collection('profiles').doc(id).get())
+    )
+    const profileMap: Record<string, any> = {}
+    profileDocs.forEach(doc => {
+        if (doc.exists) profileMap[doc.id] = doc.data()
+    })
+
+    // Merge profiles into invitaciones
+    const invitaciones = invitacionesRaw.map(inv => ({
+        ...inv,
+        profiles: inv.usado_por ? profileMap[inv.usado_por] || null : null,
+    }))
 
     return (
         <div className="max-w-6xl mx-auto space-y-10 pb-20">
@@ -50,7 +71,7 @@ export default async function AdminInvitacionesPage() {
                         <span className="text-brand">Invitaciones v2</span>
                     </h1>
                     <p className="text-lg text-white/60 font-medium leading-relaxed">
-                        Gestiona quién puede unirse a {profile.ampas.colegio_nombre}. Crea códigos para familias o para nuevos administradores.
+                        Gestiona quién puede unirse a {ampa?.colegio_nombre}. Crea códigos para familias o para nuevos administradores.
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">

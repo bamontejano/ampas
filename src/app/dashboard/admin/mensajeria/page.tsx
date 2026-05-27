@@ -1,37 +1,57 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import { Send, Bell, Users, Clock, AlertCircle, Sparkles } from 'lucide-react'
 import { enviarComunicado } from '@/app/actions/admin'
 
 export default async function MensajeriaAdminPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     if (!profile?.ampa_id || !['admin', 'admin'].includes(profile.rol || '')) {
         redirect('/dashboard')
     }
 
     // Get count of members
-    const { count: totalSocios } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('ampa_id', profile.ampa_id)
+    const countSnapshot = await adminDb.collection('profiles')
+        .where('ampa_id', '==', profile.ampa_id)
+        .count()
+        .get()
+    const totalSocios = countSnapshot.data().count
 
-    // Get historical messages
-    const { data: historial } = await supabase
-        .from('comunicados')
-        .select('*, profiles(nombre_completo)')
-        .eq('ampa_id', profile.ampa_id)
-        .order('created_at', { ascending: false })
-        .limit(10)
+    // Get historical messages (comunicados collection may not exist yet)
+    let historial: any[] = []
+    try {
+        const comunicadosSnapshot = await adminDb.collection('comunicados')
+            .where('ampa_id', '==', profile.ampa_id)
+            .orderBy('created_at', 'desc')
+            .limit(10)
+            .get()
+
+        const comunicadosRaw = comunicadosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+
+        // Batch fetch author profiles
+        const autorIds = [...new Set(comunicadosRaw.map(c => c.autor_id).filter(Boolean))]
+        const autorDocs = await Promise.all(
+            autorIds.map(id => adminDb.collection('profiles').doc(id).get())
+        )
+        const autorMap: Record<string, any> = {}
+        autorDocs.forEach(doc => {
+            if (doc.exists) autorMap[doc.id] = doc.data()
+        })
+
+        // Merge profiles into comunicados
+        historial = comunicadosRaw.map(msg => ({
+            ...msg,
+            profiles: msg.autor_id ? autorMap[msg.autor_id] || null : null,
+        }))
+    } catch (error) {
+        // Collection may not exist yet, handle gracefully
+        historial = []
+    }
 
     return (
         <div className="space-y-10 pb-16">

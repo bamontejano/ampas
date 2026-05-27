@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import Link from 'next/link'
 import {
     MessageSquare,
@@ -23,34 +23,50 @@ import { FORUM_CATEGORIES, getCategoryById } from '@/lib/forum-config'
 export default async function CategoryPage({ params }: CategoryPageProps) {
     const { category } = await params
     const categoryInfo = getCategoryById(category) || { name: 'Foro Temático', color: 'bg-slate-500', icon: MessageSquare }
-    const supabase = await createClient()
+    const user = await getUser()
 
-    // Get current user to filter by ampa_id
-    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return <div>No autorizado</div>
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id')
-        .eq('id', user.id)
-        .single()
-
+    // Get current user profile to filter by ampa_id
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
     const ampaId = profile?.ampa_id
 
-    const { data: posts, error } = await supabase
-        .from('posts')
-        .select(`
-            *,
-            profiles:autor_id (
-                nombre_completo,
-                avatar_url,
-                rol
-            )
-        `)
-        .eq('ampa_id', ampaId as string)
-        .eq('foro_categoria_id', category)
-        .order('pinned', { ascending: false })
-        .order('created_at', { ascending: false })
+    // Fetch posts
+    const postsSnapshot = await adminDb.collection('posts')
+        .where('ampa_id', '==', ampaId || '')
+        .where('foro_categoria_id', '==', category)
+        .get()
+    const postsRaw = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+
+    // Fetch author profiles
+    const authorIds = [...new Set(postsRaw.map(p => p.autor_id).filter(Boolean))]
+    const profileMap: Record<string, any> = {}
+    if (authorIds.length > 0) {
+        const profileDocs = await Promise.all(
+            authorIds.map(id => adminDb.collection('profiles').doc(id).get())
+        )
+        profileDocs.forEach(doc => {
+            if (doc.exists) profileMap[doc.id] = doc.data()
+        })
+    }
+
+    // Merge and sort: pinned (desc), then created_at (desc)
+    const posts = postsRaw.map(post => ({
+        ...post,
+        profiles: profileMap[post.autor_id] ? {
+            nombre_completo: profileMap[post.autor_id].nombre_completo,
+            avatar_url: profileMap[post.autor_id].avatar_url,
+            rol: profileMap[post.autor_id].rol
+        } : null
+    }))
+
+    posts.sort((a, b) => {
+        const aPinned = !!a.pinned
+        const bPinned = !!b.pinned
+        if (aPinned !== bPinned) return aPinned ? -1 : 1
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    })
 
     return (
         <div className="space-y-8 pb-16">

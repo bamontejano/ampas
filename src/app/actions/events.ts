@@ -1,101 +1,83 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { revalidatePath } from 'next/cache'
-import { SupabaseClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
 import { sendNotificationToAMPA } from './notifications'
 
 export async function registerForEvent(eventoId: string) {
-    const supabase: any = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getUser()
     if (!user) throw new Error('No estás autenticado')
 
-    // 1. Verificar aforo
-    const { data: evento, error: eventoError } = await supabase
-        .from('eventos' as any)
-        .select('max_asistentes, asistencias_eventos(count)')
-        .eq('id', eventoId)
-        .single()
+    const eventoRef = adminDb.collection('eventos').doc(eventoId)
+    const asistenciaRef = adminDb.collection('asistencias_eventos').doc(`${eventoId}_${user.uid}`)
 
-    if (eventoError || !evento) throw new Error('Evento no encontrado')
+    await adminDb.runTransaction(async (transaction) => {
+        const eventoDoc = await transaction.get(eventoRef)
+        if (!eventoDoc.exists) throw new Error('Evento no encontrado')
+        
+        const asistenciaDoc = await transaction.get(asistenciaRef)
+        if (asistenciaDoc.exists) throw new Error('Ya estás registrado para este evento')
 
-    const asistentesActuales = (evento as any).asistencias_eventos[0].count
-    if (evento.max_asistentes && asistentesActuales >= evento.max_asistentes) {
-        throw new Error('Lo sentimos, el aforo para este evento está completo')
-    }
+        const evento = eventoDoc.data()!
 
-    // 2. Insertar asistencia
-    const { error } = await supabase
-        .from('asistencias_eventos' as any)
-        .insert({
-            evento_id: eventoId,
-            perfil_id: user.id
-        } as any)
+        // Count current attendees
+        const asistenciasSnapshot = await transaction.get(
+            adminDb.collection('asistencias_eventos').where('evento_id', '==', eventoId)
+        )
+        const asistentesActuales = asistenciasSnapshot.size
 
-    if (error) {
-        if (error.code === '23505') {
-            throw new Error('Ya estás registrado para este evento')
+        if (evento.max_asistentes && asistentesActuales >= evento.max_asistentes) {
+            throw new Error('Lo sentimos, el aforo para este evento está completo')
         }
-        throw new Error(error.message)
-    }
+
+        transaction.set(asistenciaRef, {
+            id: asistenciaRef.id,
+            evento_id: eventoId,
+            perfil_id: user.uid,
+            created_at: new Date().toISOString()
+        })
+    })
 
     revalidatePath('/dashboard/eventos')
 }
 
 export async function unregisterFromEvent(eventoId: string) {
-    const supabase: any = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getUser()
     if (!user) throw new Error('No estás autenticado')
 
-    const { error } = await supabase
-        .from('asistencias_eventos' as any)
-        .delete()
-        .eq('evento_id', eventoId)
-        .eq('perfil_id', user.id)
-
-    if (error) throw new Error('No se pudo cancelar la asistencia')
+    const asistenciaRef = adminDb.collection('asistencias_eventos').doc(`${eventoId}_${user.uid}`)
+    await asistenciaRef.delete()
 
     revalidatePath('/dashboard/eventos')
 }
 
 export async function createEvent(formData: any) {
-    const supabase: any = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autorizado')
 
-    // Verificar rol
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('rol, ampa_id')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
-    const profile = profileRaw as any
-
-    if (!profile || (profile.rol !== 'admin' && profile.rol !== 'admin')) {
+    if (!profile || profile.rol !== 'admin') {
         throw new Error('No tienes permisos para crear eventos')
     }
 
-    const { error } = await supabase
-        .from('eventos' as any)
-        .insert({
-            ampa_id: profile.ampa_id,
-            titulo: formData.titulo,
-            descripcion: formData.descripcion,
-            fecha_inicio: formData.fecha_inicio,
-            fecha_fin: formData.fecha_fin,
-            lugar: formData.lugar,
-            tipo: formData.tipo,
-            imagen_url: formData.imagen_url,
-            max_asistentes: formData.max_asistentes ? parseInt(formData.max_asistentes) : null
-        } as any)
+    const newRef = adminDb.collection('eventos').doc()
+    await newRef.set({
+        id: newRef.id,
+        ampa_id: profile.ampa_id,
+        titulo: formData.titulo,
+        descripcion: formData.descripcion,
+        fecha_inicio: formData.fecha_inicio,
+        fecha_fin: formData.fecha_fin,
+        lugar: formData.lugar,
+        tipo: formData.tipo,
+        imagen_url: formData.imagen_url,
+        max_asistentes: formData.max_asistentes ? parseInt(formData.max_asistentes) : null,
+        created_at: new Date().toISOString()
+    })
 
-    if (error) throw new Error(error.message)
-
-    await sendNotificationToAMPA(profile.ampa_id as string, {
+    await sendNotificationToAMPA(profile.ampa_id, {
         titulo: 'Nuevo evento programado',
         contenido: `Se ha publicado: ${formData.titulo}`,
         tipo: 'evento',

@@ -1,0 +1,72 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ampa_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ampa_id", "order": "ASCENDING" },
+        { "fieldPath": "foro_categoria_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notificaciones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "perfil_id", "order": "ASCENDING" },
+        { "fieldPath": "leida", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notificaciones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "perfil_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ampa_id", "order": "ASCENDING" },
+        { "fieldPath": "rol", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "encuestas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ampa_id", "order": "ASCENDING" },
+        { "fieldPath": "activa", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "eventos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ampa_id", "order": "ASCENDING" },
+        { "fieldPath": "fecha_inicio", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "invitaciones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ampa_id", "order": "ASCENDING" },
+        { "fieldPath": "usado", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

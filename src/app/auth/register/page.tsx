@@ -2,28 +2,93 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { register } from '../actions'
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import { auth, db } from '@/lib/firebase/client'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { doc, setDoc, getDocs, query, collection, where } from 'firebase/firestore'
 
 export default function RegisterPage() {
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
 
-    async function handleRegister(formData: FormData) {
+    async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
         setLoading(true)
         setError(null)
         setSuccess(null)
 
-        const result = await register(formData)
+        const formData = new FormData(e.currentTarget)
+        const email = formData.get('email') as string
+        const password = formData.get('password') as string
+        const nombre = formData.get('nombre') as string
+        const codigoInvitacion = formData.get('codigo_invitacion') as string | null
 
-        if (result?.error) {
-            setError(result.error)
-        } else if (result?.success) {
-            setSuccess(result.message)
+        try {
+            // Check invitation code first if provided
+            let invitacion: any = null
+            let invDocId: string | null = null
+            if (codigoInvitacion) {
+                const invQuery = query(collection(db, 'invitaciones'), where('codigo', '==', codigoInvitacion.trim().toUpperCase()))
+                const invSnapshot = await getDocs(invQuery)
+                
+                if (invSnapshot.empty) {
+                    setError('El código de invitación no es válido o no existe.')
+                    setLoading(false)
+                    return
+                }
+
+                invitacion = invSnapshot.docs[0].data()
+                invDocId = invSnapshot.docs[0].id
+                if (invitacion.usado) {
+                    setError('Este código de invitación ya ha sido utilizado.')
+                    setLoading(false)
+                    return
+                }
+            }
+
+            // Create Auth User
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+            await updateProfile(userCredential.user, { displayName: nombre })
+            
+            // Create user profile in Firestore
+            const isInviteAdmin = invitacion && invitacion.codigo?.startsWith('ADMIN-')
+            const determinedRole = isInviteAdmin ? 'admin' : 'user'
+            const ampaId = invitacion ? invitacion.ampa_id : null
+
+            await setDoc(doc(db, 'profiles', userCredential.user.uid), {
+                id: userCredential.user.uid,
+                nombre_completo: nombre,
+                email: email,
+                rol: determinedRole,
+                ampa_id: ampaId,
+                onboarding_completado: false,
+                codigo_invitacion: codigoInvitacion?.trim().toUpperCase() || null,
+                created_at: new Date().toISOString()
+            })
+
+            if (codigoInvitacion && invitacion && invDocId) {
+                const invDocRef = doc(db, 'invitaciones', invDocId)
+                await setDoc(invDocRef, {
+                    usado: true,
+                    usado_por: userCredential.user.uid,
+                    usado_at: new Date().toISOString()
+                }, { merge: true })
+            }
+
+            setSuccess('¡Cuenta creada! Ya puedes iniciar sesión.')
+        } catch (err: any) {
+            console.error(err)
+            if (err.code === 'auth/email-already-in-use') {
+                setError('El email ya está en uso.')
+            } else if (err.code === 'auth/weak-password') {
+                setError('La contraseña debe tener al menos 6 caracteres.')
+            } else {
+                setError(err.message)
+            }
+        } finally {
+            setLoading(false)
         }
-
-        setLoading(false)
     }
 
     return (
@@ -49,7 +114,7 @@ export default function RegisterPage() {
                 )}
 
                 {!success && (
-                    <form action={handleRegister} className="mt-8 space-y-4">
+                    <form onSubmit={handleRegister} className="mt-8 space-y-4">
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="nombre" className="block text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">

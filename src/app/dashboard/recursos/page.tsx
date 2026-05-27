@@ -1,5 +1,4 @@
-
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     BookOpen,
     FileText,
@@ -15,7 +14,7 @@ import {
     GraduationCap
 } from 'lucide-react'
 import Link from 'next/link'
-import { Recurso } from '@/types/database'
+import { Recurso } from '@/types/firestore'
 import ResourceUploadModal from '@/components/dashboard/resource-upload-modal'
 import { deleteResource } from '@/app/actions/resources'
 import { Trash2 } from 'lucide-react'
@@ -25,35 +24,38 @@ export default async function RecursosPage({
 }: {
     searchParams: { q?: string, tipo?: string }
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user?.id as string)
-        .single()
+    if (!user) return null
+
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     const q = searchParams.q || ''
     const tipo = searchParams.tipo || ''
 
-    // Query recursos for the specific AMPA or public ones
-    let query = supabase
-        .from('recursos')
-        .select('*')
-        .or(`ampa_id.eq.${profile?.ampa_id},publico.eq.true`)
+    const ampaId = profile?.ampa_id || ''
+
+    // Fetch all resources and filter in-memory for maximum flexibility and index-free queries
+    const snap = await adminDb.collection('recursos').get()
+    let recursosRaw = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+
+    // Filter by AMPA or public resources
+    recursosRaw = recursosRaw.filter(r => r.ampa_id === ampaId || r.publico === true)
 
     if (q) {
-        query = query.ilike('titulo', `%${q}%`)
+        const lowerQ = q.toLowerCase()
+        recursosRaw = recursosRaw.filter(r => r.titulo?.toLowerCase().includes(lowerQ))
     }
 
     if (tipo) {
-        query = query.eq('tipo', tipo)
+        recursosRaw = recursosRaw.filter(r => r.tipo === tipo)
     }
 
-    const { data: recursosRaw } = await query.order('created_at', { ascending: false })
+    // Sort by created_at desc
+    recursosRaw.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
 
-    const recursos = (recursosRaw || []) as Recurso[]
+    const recursos = recursosRaw as Recurso[]
     const destacados = recursos.filter(r => r.destacado)
 
     const canCreate = profile?.rol === 'admin'

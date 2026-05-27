@@ -18,7 +18,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { createEvent } from '@/app/actions/events'
-import { createClient } from '@/lib/supabase/client'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/lib/firebase/client'
 
 export default function NewEventPage() {
     const router = useRouter()
@@ -27,7 +28,6 @@ export default function NewEventPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [imageFile, setImageFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const supabase = createClient()
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -62,17 +62,9 @@ export default function NewEventPage() {
                 const fileName = `${Math.random()}.${fileExt}`
                 const filePath = `events/${fileName}`
 
-                const { error: uploadError, data } = await supabase.storage
-                    .from('recursos')
-                    .upload(filePath, imageFile)
-
-                if (uploadError) throw new Error('Error al subir la imagen')
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('recursos')
-                    .getPublicUrl(filePath)
-
-                finalImageUrl = publicUrl
+                const storageRef = ref(storage, filePath)
+                await uploadBytes(storageRef, imageFile)
+                finalImageUrl = await getDownloadURL(storageRef)
             }
 
             const data = {

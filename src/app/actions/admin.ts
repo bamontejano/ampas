@@ -1,74 +1,52 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { revalidatePath } from 'next/cache'
 import { sendNotificationToUser } from './notifications'
 
 // ─── User Management Actions ──────────────────────────────────────────────────
 
 export async function updateMemberRole(memberId: string, newRole: 'user' | 'admin') {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos para cambiar roles')
     }
 
-    // Cannot change role of yourself
-    if (memberId === user.id) {
+    if (memberId === user.uid) {
         throw new Error('No puedes cambiar tu propio rol')
     }
 
-    // Make sure target member belongs to same AMPA
-    const { data: target } = await supabase
-        .from('profiles')
-        .select('ampa_id')
-        .eq('id', memberId)
-        .single()
+    const targetDoc = await adminDb.collection('profiles').doc(memberId).get()
+    const target = targetDoc.data()
 
     if (target?.ampa_id !== profile?.ampa_id) {
         throw new Error('El usuario no pertenece a tu AMPA')
     }
 
-    const { error } = await supabase
-        .from('profiles')
-        .update({ rol: newRole })
-        .eq('id', memberId)
-
-    if (error) throw new Error(error.message)
+    await targetDoc.ref.update({ rol: newRole })
 
     revalidatePath('/dashboard/admin/usuarios')
     return { success: true }
 }
 
 export async function updateMemberSubscription(memberId: string, status: 'activo' | 'pendiente', months: number = 12) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos para gestionar suscripciones')
     }
 
-    // Verify same AMPA
-    const { data: target } = await supabase
-        .from('profiles')
-        .select('ampa_id')
-        .eq('id', memberId)
-        .single()
+    const targetDoc = await adminDb.collection('profiles').doc(memberId).get()
+    const target = targetDoc.data()
 
     if (target?.ampa_id !== profile?.ampa_id) {
         throw new Error('El usuario no pertenece a tu AMPA')
@@ -78,57 +56,38 @@ export async function updateMemberSubscription(memberId: string, status: 'activo
         ? new Date(new Date().setMonth(new Date().getMonth() + months)).toISOString()
         : null
 
-    const { error } = await supabase
-        .from('profiles')
-        .update({
-            estado_suscripcion: status,
-            suscripcion_hasta: until
-        })
-        .eq('id', memberId)
-
-    if (error) throw new Error(error.message)
+    await targetDoc.ref.update({
+        estado_suscripcion: status,
+        suscripcion_hasta: until
+    })
 
     revalidatePath('/dashboard/admin/usuarios')
     return { success: true }
 }
 
 export async function removeMember(memberId: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos para eliminar miembros')
     }
 
-    if (memberId === user.id) {
+    if (memberId === user.uid) {
         throw new Error('No puedes eliminarte a ti mismo')
     }
 
-    // Verify same AMPA
-    const { data: target } = await supabase
-        .from('profiles')
-        .select('ampa_id')
-        .eq('id', memberId)
-        .single()
+    const targetDoc = await adminDb.collection('profiles').doc(memberId).get()
+    const target = targetDoc.data()
 
     if (target?.ampa_id !== profile?.ampa_id) {
         throw new Error('El usuario no pertenece a tu AMPA')
     }
 
-    // Detach user from AMPA (soft remove — keeps account, removes from AMPA)
-    const { error } = await supabase
-        .from('profiles')
-        .update({ ampa_id: null, rol: 'user' })
-        .eq('id', memberId)
-
-    if (error) throw new Error(error.message)
+    await targetDoc.ref.update({ ampa_id: null, rol: 'user' })
 
     revalidatePath('/dashboard/admin/usuarios')
     return { success: true }
@@ -137,16 +96,11 @@ export async function removeMember(memberId: string) {
 // ─── Invitation Actions ───────────────────────────────────────────────────────
 
 export async function createInvitations(count: number = 1, role: 'user' | 'admin' = 'user') {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos para realizar esta acción')
@@ -155,49 +109,40 @@ export async function createInvitations(count: number = 1, role: 'user' | 'admin
     const ampaId = profile?.ampa_id
     if (!ampaId) throw new Error('No se encontró el ID del AMPA')
 
-    const newInvitations = Array.from({ length: count }).map(() => {
+    const batch = adminDb.batch()
+    const invitacionesRef = adminDb.collection('invitaciones')
+
+    for (let i = 0; i < count; i++) {
         const baseCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-        return {
+        const newRef = invitacionesRef.doc()
+        batch.set(newRef, {
+            id: newRef.id,
             ampa_id: ampaId,
-            creado_por: user.id,
+            creado_por: user.uid,
             codigo: role === 'admin' ? `ADMIN-${baseCode}` : baseCode,
-            usado: false
-        }
-    })
+            usado: false,
+            created_at: new Date().toISOString()
+        })
+    }
 
-    const { error } = await supabase
-        .from('invitaciones')
-        .insert(newInvitations)
-
-    if (error) throw new Error(error.message)
+    await batch.commit()
 
     revalidatePath('/dashboard/admin/invitaciones')
     return { success: true }
 }
 
 export async function deleteInvitation(id: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    // Basic permission check
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos')
     }
 
-    const { error } = await supabase
-        .from('invitaciones')
-        .delete()
-        .eq('id', id)
-
-    if (error) throw new Error(error.message)
+    await adminDb.collection('invitaciones').doc(id).delete()
 
     revalidatePath('/dashboard/admin/invitaciones')
     return { success: true }
@@ -206,15 +151,11 @@ export async function deleteInvitation(id: string) {
 // ─── App Management Actions ───────────────────────────────────────────────────
 
 export async function createAmpaApp(formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos')
@@ -229,18 +170,17 @@ export async function createAmpaApp(formData: FormData) {
     const icono = formData.get('icono') as string || 'Zap'
     const color = formData.get('color') as string || 'indigo'
 
-    const { error } = await supabase
-        .from('ampa_apps')
-        .insert({
-            ampa_id: ampaId,
-            nombre,
-            descripcion,
-            url_acceso,
-            icono,
-            color
-        })
-
-    if (error) throw new Error(error.message)
+    const newRef = adminDb.collection('ampa_apps').doc()
+    await newRef.set({
+        id: newRef.id,
+        ampa_id: ampaId,
+        nombre,
+        descripcion,
+        url_acceso,
+        icono,
+        color,
+        created_at: new Date().toISOString()
+    })
 
     revalidatePath('/dashboard/apps')
     revalidatePath('/dashboard/admin/apps')
@@ -248,26 +188,17 @@ export async function createAmpaApp(formData: FormData) {
 }
 
 export async function deleteAmpaApp(id: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos')
     }
 
-    const { error } = await supabase
-        .from('ampa_apps')
-        .delete()
-        .eq('id', id)
-
-    if (error) throw new Error(error.message)
+    await adminDb.collection('ampa_apps').doc(id).delete()
 
     revalidatePath('/dashboard/apps')
     revalidatePath('/dashboard/admin/apps')
@@ -275,16 +206,11 @@ export async function deleteAmpaApp(id: string) {
 }
 
 export async function updateAmpaSettings(ampaId: string, formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    // Verify user is admin of THIS ampa
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol, ampa_id')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin' || profile?.ampa_id !== ampaId) {
         throw new Error('No tienes permisos para editar este AMPA')
@@ -299,12 +225,7 @@ export async function updateAmpaSettings(ampaId: string, formData: FormData) {
         logo_url: formData.get('logo_url') as string,
     }
 
-    const { error } = await supabase
-        .from('ampas')
-        .update(updates)
-        .eq('id', ampaId)
-
-    if (error) throw new Error(error.message)
+    await adminDb.collection('ampas').doc(ampaId).update(updates)
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/admin/perfil-ampa')
@@ -312,15 +233,11 @@ export async function updateAmpaSettings(ampaId: string, formData: FormData) {
 }
 
 export async function enviarComunicado(formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) throw new Error('No autenticado')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol, ampa_id')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
 
     if (profile?.rol !== 'admin') {
         throw new Error('No tienes permisos para enviar comunicados')
@@ -334,16 +251,26 @@ export async function enviarComunicado(formData: FormData) {
     const tipo = formData.get('tipo') as string || 'sistema'
     const enlace = formData.get('enlace') as string || null
 
-    const { error } = await supabase.rpc('enviar_comunicado_masivo', {
-        p_ampa_id: ampaId,
-        p_autor_id: user.id,
-        p_titulo: titulo,
-        p_contenido: contenido,
-        p_tipo: tipo,
-        p_enlace: enlace
+    // Fetch all users of this AMPA to notify them
+    const snapshot = await adminDb.collection('profiles').where('ampa_id', '==', ampaId).get()
+    
+    const batch = adminDb.batch()
+    snapshot.docs.forEach(doc => {
+        const notifRef = adminDb.collection('notificaciones').doc()
+        batch.set(notifRef, {
+            id: notifRef.id,
+            user_id: doc.id,
+            ampa_id: ampaId,
+            titulo,
+            contenido,
+            tipo,
+            enlace,
+            leida: false,
+            created_at: new Date().toISOString()
+        })
     })
 
-    if (error) throw new Error(error.message)
+    await batch.commit()
 
     revalidatePath('/dashboard')
     return { success: true }

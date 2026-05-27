@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Helper functions ──────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isFileSizeValid(maxMB) {
+      return request.resource.size < maxMB * 1024 * 1024;
+    }
+
+    function isImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isPdfType() {
+      return request.resource.contentType == 'application/pdf';
+    }
+
+    // ─── Recursos (admin only, max 10MB, images or PDFs) ──────────────────────
+
+    match /recursos/{ampaId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+        && isFileSizeValid(10)
+        && (isImageType() || isPdfType());
+    }
+
+    // ─── Post images (any authenticated user, max 5MB, images only) ───────────
+
+    match /posts/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+        && isFileSizeValid(5)
+        && isImageType();
+    }
+
+    // ─── Avatars (owner only, max 2MB, images only) ───────────────────────────
+
+    match /avatars/{userId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+        && request.auth.uid == userId
+        && isFileSizeValid(2)
+        && isImageType();
+    }
+
+    // ─── AMPA logos (admin only, max 2MB, images only) ────────────────────────
+
+    match /logos/{ampaId}/{fileName} {
+      allow read: if true; // Public logos
+      allow write: if isAuthenticated()
+        && isFileSizeValid(2)
+        && isImageType();
+    }
+  }
+}

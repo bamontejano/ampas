@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     CalendarDays,
     MapPin,
@@ -18,44 +18,41 @@ import RegisterButton from '@/components/dashboard/register-button'
 import Link from 'next/link'
 
 export default async function EventosPage() {
-    const supabase = await createClient()
+    const user = await getUser()
 
-    // Get current user profile for ampa_id
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user?.id as string)
-        .single()
-
-    const profile = profileRaw as any
+    const profileDoc = await adminDb.collection('profiles').doc(user?.uid as string).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     // Fetch events
-    const { data: eventosRaw } = await supabase
-        .from('eventos')
-        .select(`
-            *,
-            asistencias_eventos (count)
-        `)
-        .eq('ampa_id', profile?.ampa_id as string)
-        .order('fecha_inicio', { ascending: true })
+    const eventosSnapshot = await adminDb.collection('eventos')
+        .where('ampa_id', '==', profile?.ampa_id as string)
+        .orderBy('fecha_inicio', 'asc')
+        .get()
+
+    const eventos = eventosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+
+    // Fetch attendance counts per event
+    for (const evento of eventos) {
+        const countSnap = await adminDb.collection('asistencias_eventos')
+            .where('evento_id', '==', evento.id)
+            .count()
+            .get()
+        evento.asistencias_count = countSnap.data().count
+    }
 
     // Fetch user's registrations
-    const { data: misAsistencias } = await supabase
-        .from('asistencias_eventos')
-        .select('evento_id')
-        .eq('perfil_id', user?.id as string)
+    const misAsistenciasSnapshot = await adminDb.collection('asistencias_eventos')
+        .where('perfil_id', '==', user?.uid as string)
+        .get()
 
-    const eventos = eventosRaw as any[]
-    const misEventosIds = new Set((misAsistencias as any[])?.map(a => a.evento_id))
+    const misEventosIds = new Set(misAsistenciasSnapshot.docs.map(doc => doc.data().evento_id))
 
     // Stats calculation
     const proximoEvento = eventos?.[0]
     const totalEventos = eventos?.length || 0
     
-    // Sum counts from asistencias_eventos query
     const totalInscripciones = eventos?.reduce((acc, curr) => {
-        return acc + (curr.asistencias_eventos?.[0]?.count || 0)
+        return acc + (curr.asistencias_count || 0)
     }, 0) || 0
 
     return (
@@ -147,7 +144,7 @@ export default async function EventosPage() {
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Asistentes</span>
                                             <div className="flex items-center gap-2 text-slate-800 font-black text-sm">
                                                 <Users className="h-3.5 w-3.5 text-emerald-500" />
-                                                {(evento.asistencias_eventos?.[0]?.count || 0)}
+                                                {evento.asistencias_count || 0}
                                                 {evento.max_asistentes && ` / ${evento.max_asistentes}`}
                                             </div>
                                         </div>

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     Lightbulb,
     Shield,
@@ -8,67 +8,69 @@ import {
     ChevronRight,
 } from 'lucide-react'
 import Link from 'next/link'
-import { Database } from '@/types/database'
 import RealtimeFeed from '@/components/dashboard/realtime-feed'
 import SocialPostCompose from '@/components/dashboard/social-post-compose'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export default async function DashboardPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id as string)
-        .maybeSingle()
-
-    const profile = profileRaw as any
+    const profileDoc = await adminDb.collection('profiles').doc(user?.uid as string).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
     const rol = profile?.rol || 'user'
     const isAdmin = rol === 'admin'
     
     const ampaName = 'AMPA IES Cristo del Rosario'
 
-    // Fetch real posts
-    const query = supabase
-        .from('posts')
-        .select(`
-            *,
-            profiles:autor_id (
-                nombre_completo,
-                avatar_url,
-                rol
-            )
-        `)
-        .order('created_at', { ascending: false })
+    // Fetch real posts with author profiles (manual join)
+    const postsSnapshot = await adminDb.collection('posts')
+        .orderBy('created_at', 'desc')
         .limit(10)
+        .get()
+    const postsRaw = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
-    const { data: postsRaw } = await query
-    const posts = postsRaw || []
+    // Batch fetch author profiles
+    const authorIds = [...new Set(postsRaw.map((p: any) => p.autor_id).filter(Boolean))]
+    const profileDocs = await Promise.all(
+        authorIds.map(id => adminDb.collection('profiles').doc(id).get())
+    )
+    const profileMap: Record<string, any> = {}
+    profileDocs.forEach(doc => {
+        if (doc.exists) profileMap[doc.id] = doc.data()
+    })
 
-    const { data: userLikes } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('perfil_id', user?.id as string)
+    // Merge posts with author profiles
+    const posts = postsRaw.map((p: any) => ({
+        ...p,
+        profiles: profileMap[p.autor_id] ? {
+            nombre_completo: profileMap[p.autor_id].nombre_completo,
+            avatar_url: profileMap[p.autor_id].avatar_url,
+            rol: profileMap[p.autor_id].rol,
+        } : null,
+    }))
 
-    const likedPostIds = (userLikes || []).map(like => (like as any).post_id)
+    // Fetch user's liked post IDs
+    const userLikesSnapshot = await adminDb.collection('post_likes')
+        .where('perfil_id', '==', user?.uid as string)
+        .get()
+    const likedPostIds = userLikesSnapshot.docs.map(doc => doc.data().post_id)
 
     // Dynamic Apps/Services (ignoring ampa_id filter)
-    const { data: ampaApps } = await supabase
-        .from('ampa_apps')
-        .select('*')
+    const ampaAppsSnapshot = await adminDb.collection('ampa_apps')
         .limit(3)
+        .get()
+    const ampaApps = ampaAppsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
     // Upcoming Events (ignoring ampa_id filter)
-    const { data: upcomingEvents } = await supabase
-        .from('eventos')
-        .select('*')
-        .gte('fecha_inicio', new Date().toISOString())
-        .order('fecha_inicio', { ascending: true })
+    const upcomingEventsSnapshot = await adminDb.collection('eventos')
+        .where('fecha_inicio', '>=', new Date().toISOString())
+        .orderBy('fecha_inicio', 'asc')
         .limit(1)
+        .get()
+    const upcomingEvents = upcomingEventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
-    const nextEvent = upcomingEvents?.[0]
+    const nextEvent = upcomingEvents?.[0] as any
 
     return (
         <div className="mx-auto max-w-6xl space-y-8 pb-16">
@@ -138,7 +140,7 @@ export default async function DashboardPage() {
                             {(!ampaApps || ampaApps.length === 0) ? (
                                 <p className="text-[10px] text-slate-400 font-bold uppercase py-4">No hay accesos configurados</p>
                             ) : (
-                                ampaApps.map((app) => (
+                                ampaApps.map((app: any) => (
                                     <a key={app.id} href={app.url_acceso} target="_blank" rel="noreferrer" className="flex items-center gap-4 rounded-2xl p-3 transition-all hover:bg-slate-50 group border border-transparent hover:border-slate-100">
                                         <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${app.color || 'bg-brand'} text-white shadow-lg group-hover:scale-105 transition-transform`}>
                                             <Gamepad2 className="w-5 h-5" />

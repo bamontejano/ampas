@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     Bell,
     Calendar,
@@ -17,18 +17,16 @@ import { markAsRead, markAllAsRead } from '@/app/actions/notifications'
 import MarkAllButton from '@/components/dashboard/mark-all-button'
 
 export default async function NotificacionesPage() {
-    const supabase = await createClient()
+    const user = await getUser()
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
 
     // Fetch all notifications
-    const { data: notifications } = await supabase
-        .from('notificaciones' as any)
-        .select('*')
-        .eq('perfil_id', user.id)
-        .order('created_at', { ascending: false })
+    const notificationsSnapshot = await adminDb.collection('notificaciones')
+        .where('perfil_id', '==', user.uid)
+        .orderBy('created_at', 'desc')
+        .get()
+    const notifications = notificationsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
 
     const unreadCount = notifications?.filter((n: any) => !n.leida).length || 0
 

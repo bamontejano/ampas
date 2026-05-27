@@ -6,7 +6,8 @@ import { markAsRead, markAllAsRead } from '@/app/actions/notifications'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { db } from '@/lib/firebase/client'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 
 interface Notification {
     id: string
@@ -27,7 +28,6 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
     const [isOpen, setIsOpen] = useState(false)
     const [isPending, startTransition] = useTransition()
     const [notifications, setNotifications] = useState(initialNotifications)
-    const supabase = createClient()
 
     const unreadCount = notifications.filter(n => !n.leida).length
 
@@ -38,32 +38,26 @@ export default function NotificationBell({ initialNotifications, perfilId }: Not
 
     // Real-time subscription
     useEffect(() => {
-        const channel = supabase
-            .channel(`notificaciones:${perfilId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'notificaciones',
-                    filter: `perfil_id=eq.${perfilId}`
-                },
-                (payload: any) => {
-                    if (payload.eventType === 'INSERT') {
-                        setNotifications(prev => [payload.new as Notification, ...prev].slice(0, 15))
-                    } else if (payload.eventType === 'UPDATE') {
-                        setNotifications(prev => prev.map(n => n.id === payload.new.id ? payload.new as Notification : n))
-                    } else if (payload.eventType === 'DELETE') {
-                        setNotifications(prev => prev.filter(n => n.id !== payload.old.id))
-                    }
-                }
-            )
-            .subscribe()
+        const q = query(
+            collection(db, 'notificaciones'),
+            where('perfil_id', '==', perfilId),
+            orderBy('created_at', 'desc')
+        )
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const list: Notification[] = []
+            snapshot.forEach((doc) => {
+                list.push({ id: doc.id, ...doc.data() } as Notification)
+            })
+            setNotifications(list.slice(0, 15))
+        }, (err) => {
+            console.error('Error listening to notifications:', err)
+        })
 
         return () => {
-            supabase.removeChannel(channel)
+            unsubscribe()
         }
-    }, [perfilId, supabase])
+    }, [perfilId])
 
     const getIcon = (tipo: string) => {
         switch (tipo) {

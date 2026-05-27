@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import {
     Users,
@@ -19,31 +19,31 @@ const roleOrder: Record<Role, number> = {
 }
 
 export default async function AdminUsuariosPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('*, ampas(*)')
-        .eq('id', user.id)
-        .single()
-
-    const profile = profileRaw as any
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     if (profile?.rol !== 'admin') {
         redirect('/dashboard')
     }
 
-    // Todos los miembros del mismo AMPA
-    const { data: miembrosRaw } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('ampa_id', profile.ampa_id)
-        .order('created_at', { ascending: false })
+    // Fetch AMPA data separately
+    let ampa = null
+    if (profile?.ampa_id) {
+        const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+        ampa = ampaDoc.exists ? ampaDoc.data() : null
+    }
 
-    const miembros = (miembrosRaw as any[]) || []
+    // Todos los miembros del mismo AMPA
+    const miembrosSnapshot = await adminDb.collection('profiles')
+        .where('ampa_id', '==', profile.ampa_id)
+        .orderBy('created_at', 'desc')
+        .get()
+
+    const miembros = miembrosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
 
     // Sort: admin > junta > familia
     miembros.sort((a, b) => (roleOrder[a.rol as Role] ?? 99) - (roleOrder[b.rol as Role] ?? 99))
@@ -69,7 +69,7 @@ export default async function AdminUsuariosPage() {
                     </h1>
                     <p className="text-lg text-indigo-100 font-medium leading-relaxed opacity-90">
                         Administra los roles y el acceso de todas las familias y miembros de la junta de{' '}
-                        <strong>{profile?.ampas?.nombre}</strong>.
+                        <strong>{ampa?.nombre}</strong>.
                     </p>
 
                     {/* Quick Stats */}
@@ -160,7 +160,7 @@ export default async function AdminUsuariosPage() {
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-900">
                                                         {m.nombre_completo || 'Sin nombre'}
-                                                        {m.id === user.id && (
+                                                        {m.id === user.uid && (
                                                             <span className="ml-2 text-[10px] text-slate-400 font-medium">(tú)</span>
                                                         )}
                                                     </p>
@@ -192,7 +192,7 @@ export default async function AdminUsuariosPage() {
                                             <UserRowActions
                                                 memberId={m.id}
                                                 currentRole={m.rol as any}
-                                                currentUserId={user.id}
+                                                currentUserId={user.uid}
                                                 currentSubscription={m.estado_suscripcion || 'pendiente'}
                                             />
                                         </td>

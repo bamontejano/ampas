@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import {
     Users,
@@ -13,44 +13,36 @@ import {
 import { generateInviteCode } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import SubirRecursoForm from '@/components/dashboard/subir-recurso-form'
-import type { Database } from '@/types/database'
-
-// Definimos el tipo del perfil que esperamos de la consulta
-type ProfileWithAmpa = Database['public']['Tables']['profiles']['Row'] & {
-    ampas: Database['public']['Tables']['ampas']['Row'] | null
-}
-
-import { SupabaseClient } from '@supabase/supabase-js'
 
 async function createInvite(ampaId: string, profileId: string) {
     'use server'
-    const supabase: any = await createClient()
     const codigo = generateInviteCode()
 
-    const { error } = await supabase
-        .from('invitaciones')
-        .insert({
-            ampa_id: ampaId,
-            codigo,
-            creado_por: profileId
-        })
+    await adminDb.collection('invitaciones').add({
+        ampa_id: ampaId,
+        codigo,
+        creado_por: profileId,
+        usado: false,
+        created_at: new Date().toISOString(),
+    })
 
-    if (!error) revalidatePath('/dashboard/admin')
+    revalidatePath('/dashboard/admin')
 }
 
 export default async function AdminPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('*, ampas(*)')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } as any : null
 
-    const profile = profileRaw as unknown as ProfileWithAmpa
+    // Fetch ampa separately (no joins in Firestore)
+    let ampa: any = null
+    if (profile?.ampa_id) {
+        const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+        ampa = ampaDoc.exists ? ampaDoc.data() : null
+    }
 
     // Solo administradores pueden ver esto
     if (profile?.rol === 'user') {
@@ -58,37 +50,41 @@ export default async function AdminPage() {
     }
 
     // Obtenemos invitaciones
-    const { data: invitacionesRaw } = await supabase
-        .from('invitaciones')
-        .select('*')
-        .eq('ampa_id', profile.ampa_id!)
-        .order('created_at', { ascending: false })
+    const invitacionesSnapshot = await adminDb.collection('invitaciones')
+        .where('ampa_id', '==', profile!.ampa_id)
+        .orderBy('created_at', 'desc')
         .limit(5)
-
-    const invitaciones = invitacionesRaw as any[]
+        .get()
+    const invitaciones = invitacionesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
 
     // Obtenemos miembros
-    const { data: miembrosRaw, count: miembrosCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact' })
-        .eq('ampa_id', profile.ampa_id!)
+    const miembrosSnapshot = await adminDb.collection('profiles')
+        .where('ampa_id', '==', profile!.ampa_id)
         .limit(5)
+        .get()
+    const miembros = miembrosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
 
-    const miembros = miembrosRaw as any[]
+    // Count total miembros
+    const miembrosCountSnapshot = await adminDb.collection('profiles')
+        .where('ampa_id', '==', profile!.ampa_id)
+        .count()
+        .get()
+    const miembrosCount = miembrosCountSnapshot.data().count
 
     // Obtenemos códigos libres
-    const { count: invitacionesLibres } = await supabase
-        .from('invitaciones')
-        .select('*', { count: 'exact', head: true })
-        .eq('ampa_id', profile.ampa_id!)
-        .eq('usado', false)
+    const invitacionesLibresSnapshot = await adminDb.collection('invitaciones')
+        .where('ampa_id', '==', profile!.ampa_id)
+        .where('usado', '==', false)
+        .count()
+        .get()
+    const invitacionesLibres = invitacionesLibresSnapshot.data().count
 
     return (
         <div className="space-y-8 pb-16">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 className="text-3xl font-bold text-slate-900">Panel de Gestión</h2>
-                    <p className="text-slate-500">Control de comunidad para {profile?.ampas?.nombre}</p>
+                    <p className="text-slate-500">Control de comunidad para {ampa?.nombre}</p>
                 </div>
                 <form action={createInvite.bind(null, profile?.ampa_id!, profile?.id!)}>
                     <button className="flex items-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-bold text-white transition-all hover:opacity-90 shadow-lg shadow-brand/10">
@@ -167,7 +163,7 @@ export default async function AdminPage() {
                         </div>
                     </div>
 
-                    <SubirRecursoForm ampaId={profile.ampa_id!} />
+                    <SubirRecursoForm ampaId={profile!.ampa_id!} />
                 </div>
             </div>
         </div>

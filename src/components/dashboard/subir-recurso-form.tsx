@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { db, storage } from '@/lib/firebase/client'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { collection, doc, setDoc } from 'firebase/firestore'
 import {
     Upload,
     X,
@@ -18,8 +20,6 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [file, setFile] = useState<File | null>(null)
-
-    const supabase = createClient()
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -38,40 +38,30 @@ export default function SubirRecursoForm({ ampaId }: { ampaId: string }) {
             let archivoUrl = null
 
             if (file) {
-                // 1. Subir a Supabase Storage
+                // 1. Subir a Firebase Storage
                 const fileExt = file.name.split('.').pop()
                 const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
-                const filePath = `${ampaId}/${fileName}`
+                const storageRef = ref(storage, `recursos/${ampaId}/${fileName}`)
 
-                const { error: uploadError, data } = await supabase.storage
-                    .from('recursos')
-                    .upload(filePath, file)
-
-                if (uploadError) throw uploadError
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('recursos')
-                    .getPublicUrl(filePath)
-
-                archivoUrl = publicUrl
+                await uploadBytes(storageRef, file)
+                archivoUrl = await getDownloadURL(storageRef)
             }
 
-            // 2. Insertar en la tabla de recursos
-            const { error: dbError } = await supabase
-                .from('recursos')
-                .insert({
-                    titulo,
-                    descripcion,
-                    tipo: tipo as any,
-                    etapa_educativa: [etapa],
-                    ampa_id: ampaId,
-                    archivo_url: archivoUrl,
-                    tags,
-                    destacado,
-                    publico: true
-                })
-
-            if (dbError) throw dbError
+            // 2. Insertar en Firestore recursos
+            const newDocRef = doc(collection(db, 'recursos'))
+            await setDoc(newDocRef, {
+                id: newDocRef.id,
+                titulo,
+                descripcion,
+                tipo,
+                etapa_educativa: [etapa],
+                ampa_id: ampaId,
+                archivo_url: archivoUrl,
+                tags,
+                destacado,
+                publico: true,
+                created_at: new Date().toISOString()
+            })
 
             setSuccess(true)
             setTimeout(() => {

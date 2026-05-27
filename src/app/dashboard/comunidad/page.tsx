@@ -7,30 +7,26 @@ import {
     Users
 } from 'lucide-react'
 
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { FileText, Play, Download, BookOpen } from 'lucide-react'
 
 export default async function ForosPage() {
     const categories = FORUM_CATEGORIES
-    const supabase = await createClient()
+    const user = await getUser()
+
+    if (!user) return null
 
     // Get current user profile for ampa_id
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profileRaw } = await supabase
-        .from('profiles')
-        .select('ampa_id')
-        .eq('id', user?.id as string)
-        .single()
-
-    const profile = profileRaw as any
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     // Fetch resources
-    const { data: recursos } = await supabase
-        .from('recursos')
-        .select('*')
-        .eq('ampa_id', profile?.ampa_id as string)
-        .order('created_at', { ascending: false })
+    const recursosSnapshot = await adminDb.collection('recursos')
+        .where('ampa_id', '==', profile?.ampa_id || '')
+        .orderBy('created_at', 'desc')
         .limit(4)
+        .get()
+    const recursos = recursosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
 
     return (
         <div className="space-y-16 pb-16">

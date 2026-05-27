@@ -3,7 +3,8 @@
 import { useState, useTransition, useRef } from 'react'
 import { ImageIcon, Send, Loader2, Smile, MapPin, Video, X, Link as LinkIcon, Sparkles, Globe } from 'lucide-react'
 import { createSocialPost } from '@/app/actions/community'
-import { createClient } from '@/lib/supabase/client'
+import { storage } from '@/lib/firebase/client'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 const MOODS = [
     { emoji: '😊', label: 'Feliz' },
@@ -38,7 +39,6 @@ export default function SocialPostCompose({
     const [isPending, startTransition] = useTransition()
     const [isExpanded, setIsExpanded] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const supabase = createClient()
 
     const addEmoji = (emoji: string) => {
         setContent(prev => prev + emoji)
@@ -75,19 +75,10 @@ export default function SocialPostCompose({
                 if (imageFile) {
                     const fileExt = imageFile.name.split('.').pop()
                     const fileName = `${Math.random()}.${fileExt}`
-                    const filePath = `post-images/${fileName}`
+                    const storageRef = ref(storage, `posts/${fileName}`)
 
-                    const { error: uploadError } = await supabase.storage
-                        .from('posts')
-                        .upload(filePath, imageFile)
-
-                    if (uploadError) throw uploadError
-
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('posts')
-                        .getPublicUrl(filePath)
-
-                    imageUrl = publicUrl
+                    await uploadBytes(storageRef, imageFile)
+                    imageUrl = await getDownloadURL(storageRef)
                 }
 
                 const moodString = selectedMood ? `${selectedMood.emoji} ${selectedMood.label}` : undefined

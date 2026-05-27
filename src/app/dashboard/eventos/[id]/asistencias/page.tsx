@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import {
     Users,
     ChevronLeft,
@@ -12,46 +12,40 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { redirect } from 'next/navigation'
 
-export default async function EventAttendeesPage({ params }: { params: { id: string } }) {
-    const supabase = await createClient()
-    const { id } = params
+export default async function EventAttendeesPage({ params }: { params: Promise<{ id: string }> }) {
+    const user = await getUser()
+    if (!user) return null
+
+    const { id } = await params
 
     // 1. Verify user role
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol, ampa_id')
-        .eq('id', user?.id as string)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
-    if (!profile || (profile.rol !== 'admin' && profile.rol !== 'admin')) {
+    if (profile?.rol !== 'admin') {
         redirect('/dashboard/eventos')
     }
 
     // 2. Fetch event details
-    const { data: evento } = await supabase
-        .from('eventos')
-        .select('*')
-        .eq('id', id)
-        .single()
-
-    if (!evento) redirect('/dashboard/eventos')
+    const eventDoc = await adminDb.collection('eventos').doc(id).get()
+    if (!eventDoc.exists) redirect('/dashboard/eventos')
+    const evento = { id: eventDoc.id, ...eventDoc.data() } as any
 
     // 3. Fetch attendees with profile info
-    const { data: asistencias } = await supabase
-        .from('asistencias_eventos')
-        .select(`
-            perfil_id,
-            profiles (
-                nombre_completo,
-                email,
-                avatar_url,
-                rol
-            )
-        `)
-        .eq('evento_id', id)
+    const asistenciasSnapshot = await adminDb.collection('asistencias_eventos')
+        .where('evento_id', '==', id)
+        .get()
+    const asistencias = asistenciasSnapshot.docs.map(doc => doc.data())
 
-    const attendees = asistencias?.map((a: any) => a.profiles) || []
+    const perfilIds = asistencias.map(a => a.perfil_id).filter(Boolean)
+
+    let attendees: any[] = []
+    if (perfilIds.length > 0) {
+        const profileDocs = await Promise.all(
+            perfilIds.map(pid => adminDb.collection('profiles').doc(pid).get())
+        )
+        attendees = profileDocs.filter(d => d.exists).map(d => d.data())
+    }
 
     return (
         <div className="max-w-5xl mx-auto pb-20">

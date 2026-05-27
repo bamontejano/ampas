@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 
 export default async function AdminLayout({
@@ -6,16 +6,12 @@ export default async function AdminLayout({
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     // Solo administradores pueden acceder a esta sección
     if (profile?.rol !== 'admin') {

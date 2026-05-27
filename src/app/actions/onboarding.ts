@@ -1,52 +1,67 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { sendNotificationToAMPA } from './notifications'
 
 export async function redeemInvitation(formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) redirect('/auth/login')
 
     const codigo = formData.get('codigo') as string
     if (!codigo) throw new Error('Código no proporcionado')
 
-    // 1. Procesar todo en una sola transacción atómica via RPC
-    const { data: res, error: rpcError } = await supabase.rpc('procesar_registro_con_invitacion', {
-        p_codigo: codigo,
-        p_user_id: user.id,
-        p_nombre_completo: null, // Ya tiene nombre en el perfil
-        p_email: user.email || null,
-    })
+    // Find invitation
+    const invitacionesRef = adminDb.collection('invitaciones')
+    const q = invitacionesRef.where('codigo', '==', codigo.trim().toUpperCase())
+    const snapshot = await q.get()
 
-    if (rpcError) throw new Error(rpcError.message)
-
-    if (!res || !res.success) {
-        throw new Error(res?.error || 'Error al validar el código')
+    if (snapshot.empty) {
+        throw new Error('El código de invitación no es válido o no existe')
     }
 
-    // 2. Notificar al AMPA del nuevo ingreso (error no bloqueante)
-    if (res.ampa_id) {
-        try {
-            const { data: userData } = await supabase.from('profiles').select('nombre_completo').eq('id', user.id).maybeSingle()
+    const invDoc = snapshot.docs[0]
+    const invData = invDoc.data()
 
-            await sendNotificationToAMPA(res.ampa_id, {
-                titulo: res.es_admin ? 'Nuevo Administrador asignado' : 'Nuevo miembro en la comunidad',
-                contenido: `${userData?.nombre_completo || 'Un nuevo usuario'} se ha unido al AMPA.`,
-                tipo: 'sistema',
-                enlace: res.es_admin ? '/dashboard/admin/usuarios' : undefined
-            })
-        } catch (error) {
-            console.error('Error enviando notificación de bienvenida:', error)
-        }
+    if (invData.usado) {
+        throw new Error('Este código ya ha sido utilizado')
+    }
+
+    const esAdmin = invData.codigo.startsWith('ADMIN-')
+    const rolAsignado = esAdmin ? 'admin' : 'user'
+
+    // Update in transaction
+    await adminDb.runTransaction(async (transaction) => {
+        const invRef = invDoc.ref
+        const userRef = adminDb.collection('profiles').doc(user.uid)
+        
+        transaction.update(invRef, { usado: true })
+        transaction.set(userRef, {
+            ampa_id: invData.ampa_id,
+            rol: rolAsignado,
+            onboarding_completado: true
+        }, { merge: true })
+    })
+
+    // Notify AMPA
+    try {
+        const userDoc = await adminDb.collection('profiles').doc(user.uid).get()
+        const userData = userDoc.data()
+
+        await sendNotificationToAMPA(invData.ampa_id, {
+            titulo: esAdmin ? 'Nuevo Administrador asignado' : 'Nuevo miembro en la comunidad',
+            contenido: `${userData?.nombre_completo || 'Un nuevo usuario'} se ha unido al AMPA.`,
+            tipo: 'sistema',
+            enlace: esAdmin ? '/dashboard/admin/usuarios' : undefined
+        })
+    } catch (error) {
+        console.error('Error enviando notificación de bienvenida:', error)
     }
 
     revalidatePath('/', 'layout')
 
-    // Si el código era de admin, redirigir al panel de gestión de AMPA
-    if (res && res.es_admin) {
+    if (esAdmin) {
         redirect('/dashboard/admin')
     }
 
@@ -54,18 +69,12 @@ export async function redeemInvitation(formData: FormData) {
 }
 
 export async function skipOnboarding() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
     if (!user) redirect('/auth/login')
 
-    const { error } = await supabase
-        .from('profiles')
-        .update({
-            onboarding_completado: true
-        })
-        .eq('id', user.id)
-
-    if (error) throw new Error(error.message)
+    await adminDb.collection('profiles').doc(user.uid).set({
+        onboarding_completado: true
+    }, { merge: true })
 
     revalidatePath('/', 'layout')
     redirect('/dashboard')

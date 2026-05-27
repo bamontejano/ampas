@@ -1,29 +1,22 @@
-import { createClient } from '@/lib/supabase/server'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import { redirect } from 'next/navigation'
 import { Building2, Save, Palette, Info, Camera } from 'lucide-react'
 import { updateAmpaSettings } from '@/app/actions/admin'
 
 export default async function PerfilAmpaPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getUser()
 
     if (!user) redirect('/auth/login')
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('ampa_id, rol')
-        .eq('id', user.id)
-        .single()
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.exists ? profileDoc.data() : null
 
     if (!profile?.ampa_id) {
         redirect('/dashboard')
     }
 
-    const { data: ampa } = await supabase
-        .from('ampas')
-        .select('*')
-        .eq('id', profile.ampa_id)
-        .single()
+    const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
+    const ampa = ampaDoc.exists ? { id: ampaDoc.id, ...ampaDoc.data() } as any : null
 
     if (!ampa) redirect('/dashboard')
 

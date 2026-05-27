@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { db } from '@/lib/firebase/client'
+import { collection, query, where, orderBy, onSnapshot, or, doc, getDoc } from 'firebase/firestore'
 import {
     Heart,
     MessageCircle,
@@ -26,7 +27,6 @@ export default function RealtimeFeed({
 }) {
     const [posts, setPosts] = useState<any[]>(initialPosts)
     const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set(initialLikedPosts))
-    const supabase = createClient()
 
     useEffect(() => {
         setPosts(initialPosts)
@@ -37,49 +37,50 @@ export default function RealtimeFeed({
     }, [initialLikedPosts])
 
     useEffect(() => {
-        const channel = supabase
-            .channel('schema-db-changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'posts',
-                },
-                async (payload) => {
-                    // Filter on client if it's for this AMPA or global
-                    if (payload.new.ampa_id === ampaId || payload.new.is_global) {
-                        const { data: newPost } = await supabase
-                            .from('posts')
-                            .select('*, profiles:autor_id(nombre_completo, avatar_url, rol)')
-                            .eq('id', payload.new.id)
-                            .single()
+        const q = query(
+            collection(db, 'posts'),
+            or(
+                where('ampa_id', '==', ampaId),
+                where('is_global', '==', true)
+            )
+        )
 
-                        if (newPost) {
-                            setPosts((prev) => [newPost, ...prev])
-                        }
-                    }
-                }
+        const unsubscribe = onSnapshot(q, async (snapshot) => {
+            const rawDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+
+            // Fetch missing profiles
+            const authorIds = [...new Set(rawDocs.map((p: any) => p.autor_id).filter(Boolean))]
+            const profileDocs = await Promise.all(
+                authorIds.map(async (id) => {
+                    const snap = await getDoc(doc(db, 'profiles', id))
+                    return { id, data: snap.exists() ? snap.data() : null }
+                })
             )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'posts',
-                },
-                (payload) => {
-                    if (payload.new.ampa_id === ampaId || payload.new.is_global) {
-                        setPosts((prev) => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
-                    }
-                }
-            )
-            .subscribe()
+
+            const profileMap: Record<string, any> = {}
+            profileDocs.forEach(p => {
+                if (p.data) profileMap[p.id] = p.data
+            })
+
+            const merged = rawDocs.map((p: any) => ({
+                ...p,
+                profiles: profileMap[p.autor_id] ? {
+                    nombre_completo: profileMap[p.autor_id].nombre_completo,
+                    avatar_url: profileMap[p.autor_id].avatar_url,
+                    rol: profileMap[p.autor_id].rol
+                } : null
+            }))
+
+            merged.sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+            setPosts(merged)
+        }, (err) => {
+            console.error('Error listening to posts feed:', err)
+        })
 
         return () => {
-            supabase.removeChannel(channel)
+            unsubscribe()
         }
-    }, [ampaId, supabase])
+    }, [ampaId])
 
     const toggleLike = async (postId: string) => {
         // Optimistic update
