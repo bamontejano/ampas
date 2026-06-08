@@ -42,3 +42,7 @@ next-env.d.ts
 
 # temp/debug scripts
 /tmp
+
+# Firebase service account keys — never commit these
+*adminsdk*.json
+private_key.txt
