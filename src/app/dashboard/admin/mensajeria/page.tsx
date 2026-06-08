@@ -25,29 +25,34 @@ export default async function MensajeriaAdminPage() {
     // Get historical messages (comunicados collection may not exist yet)
     let historial: any[] = []
     try {
-        const comunicadosSnapshot = await adminDb.collection('comunicados')
-            .where('ampa_id', '==', profile.ampa_id)
-            .orderBy('created_at', 'desc')
-            .limit(10)
-            .get()
+        if (!profile?.ampa_id) {
+            historial = []
+        } else {
+            const comunicadosSnapshot = await adminDb.collection('comunicados')
+                .where('ampa_id', '==', profile.ampa_id)
+                .get()
 
-        const comunicadosRaw = comunicadosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+            const comunicadosRaw = (comunicadosSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() })) as any[])
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 10)
 
-        // Batch fetch author profiles
-        const autorIds = [...new Set(comunicadosRaw.map(c => c.autor_id).filter(Boolean))]
-        const autorDocs = await Promise.all(
-            autorIds.map(id => adminDb.collection('profiles').doc(id).get())
-        )
-        const autorMap: Record<string, any> = {}
-        autorDocs.forEach(doc => {
-            if (doc.exists) autorMap[doc.id] = doc.data()
-        })
+            // Batch fetch author profiles
+            const autorIds = [...new Set(comunicadosRaw.map(c => c.autor_id).filter(Boolean))]
+            const autorDocs = await Promise.all(
+                autorIds.map(id => adminDb.collection('profiles').doc(id).get())
+            )
+            const autorMap: Record<string, any> = {}
+            autorDocs.forEach(doc => {
+                if (doc.exists) autorMap[doc.id] = doc.data()
+            })
 
-        // Merge profiles into comunicados
-        historial = comunicadosRaw.map(msg => ({
-            ...msg,
-            profiles: msg.autor_id ? autorMap[msg.autor_id] || null : null,
-        }))
+            // Merge profiles into comunicados
+            historial = comunicadosRaw.map(msg => ({
+                ...msg,
+                profiles: msg.autor_id ? autorMap[msg.autor_id] || null : null,
+            }))
+        }
     } catch (error) {
         // Collection may not exist yet, handle gracefully
         historial = []

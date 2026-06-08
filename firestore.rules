@@ -130,7 +130,7 @@ service cloud.firestore {
     // ─── Invitaciones ─────────────────────────────────────────────────────────
 
     match /invitaciones/{invId} {
-      allow read: if isAuthenticated();
+      allow read: if true; // Anyone can check if a code exists during registration
       allow create: if isAdmin();
       allow update: if isAuthenticated(); // Users redeem invitations
       allow delete: if isAdmin();

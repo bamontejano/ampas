@@ -22,9 +22,9 @@ export async function POST(request: Request) {
     response.cookies.set(options);
     
     return response;
-  } catch (error) {
-    console.error('Error creating session cookie', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error creating session cookie:', error?.message ?? error);
+    return NextResponse.json({ error: 'Internal Server Error', detail: error?.message ?? String(error) }, { status: 500 });
   }
 }
 

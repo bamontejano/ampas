@@ -50,34 +50,48 @@ export default async function AdminPage() {
     }
 
     // Obtenemos invitaciones
-    const invitacionesSnapshot = await adminDb.collection('invitaciones')
-        .where('ampa_id', '==', profile!.ampa_id)
-        .orderBy('created_at', 'desc')
-        .limit(5)
-        .get()
-    const invitaciones = invitacionesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+    let invitaciones = []
+    if (profile?.ampa_id) {
+        const invitacionesSnapshot = await adminDb.collection('invitaciones')
+            .where('ampa_id', '==', profile.ampa_id)
+            .get()
+        invitaciones = (invitacionesSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() })) as any[])
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 5)
+    }
 
     // Obtenemos miembros
-    const miembrosSnapshot = await adminDb.collection('profiles')
-        .where('ampa_id', '==', profile!.ampa_id)
-        .limit(5)
-        .get()
-    const miembros = miembrosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+    let miembros = []
+    if (profile?.ampa_id) {
+        const miembrosSnapshot = await adminDb.collection('profiles')
+            .where('ampa_id', '==', profile.ampa_id)
+            .get()
+        miembros = (miembrosSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() })) as any[])
+            .slice(0, 5)
+    }
 
     // Count total miembros
-    const miembrosCountSnapshot = await adminDb.collection('profiles')
-        .where('ampa_id', '==', profile!.ampa_id)
-        .count()
-        .get()
-    const miembrosCount = miembrosCountSnapshot.data().count
+    let miembrosCount = 0
+    if (profile?.ampa_id) {
+        const miembrosCountSnapshot = await adminDb.collection('profiles')
+            .where('ampa_id', '==', profile.ampa_id)
+            .count()
+            .get()
+        miembrosCount = miembrosCountSnapshot.data().count
+    }
 
     // Obtenemos códigos libres
-    const invitacionesLibresSnapshot = await adminDb.collection('invitaciones')
-        .where('ampa_id', '==', profile!.ampa_id)
-        .where('usado', '==', false)
-        .count()
-        .get()
-    const invitacionesLibres = invitacionesLibresSnapshot.data().count
+    let invitacionesLibres = 0
+    if (profile?.ampa_id) {
+        const invitacionesLibresSnapshot = await adminDb.collection('invitaciones')
+            .where('ampa_id', '==', profile.ampa_id)
+            .where('usado', '==', false)
+            .count()
+            .get()
+        invitacionesLibres = invitacionesLibresSnapshot.data().count
+    }
 
     return (
         <div className="space-y-8 pb-16">

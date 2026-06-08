@@ -34,12 +34,16 @@ export default async function AdminInvitacionesPage() {
     }
 
     // Fetch invitaciones
-    const invitacionesSnapshot = await adminDb.collection('invitaciones')
-        .where('ampa_id', '==', profile.ampa_id)
-        .orderBy('created_at', 'desc')
-        .get()
+    let invitacionesRaw: any[] = []
+    if (profile?.ampa_id) {
+        const invitacionesSnapshot = await adminDb.collection('invitaciones')
+            .where('ampa_id', '==', profile.ampa_id)
+            .get()
 
-    const invitacionesRaw = invitacionesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+        invitacionesRaw = (invitacionesSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() })) as any[])
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }
 
     // Batch fetch usado_por profiles
     const usadoPorIds = [...new Set(invitacionesRaw.map(inv => inv.usado_por).filter(Boolean))]

@@ -128,6 +128,7 @@ export async function createInvitations(count: number = 1, role: 'user' | 'admin
     await batch.commit()
 
     revalidatePath('/dashboard/admin/invitaciones')
+    revalidatePath('/dashboard/admin/usuarios')
     return { success: true }
 }
 

@@ -8,8 +8,14 @@ import {
     UserX,
     Mail,
     Calendar,
+    Plus,
+    Ticket,
+    UserPlus,
+    ArrowRight,
 } from 'lucide-react'
 import { UserRowActions, UserRoleBadge } from '@/components/dashboard/admin/user-row-actions'
+import { createInvitations } from '@/app/actions/admin'
+import Link from 'next/link'
 
 type Role = 'user' | 'admin'
 
@@ -38,15 +44,24 @@ export default async function AdminUsuariosPage() {
     }
 
     // Todos los miembros del mismo AMPA
-    const miembrosSnapshot = await adminDb.collection('profiles')
-        .where('ampa_id', '==', profile.ampa_id)
-        .orderBy('created_at', 'desc')
-        .get()
+    let miembros = []
+    if (profile?.ampa_id) {
+        const miembrosSnapshot = await adminDb.collection('profiles')
+            .where('ampa_id', '==', profile.ampa_id)
+            .get()
+        
+        miembros = miembrosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+    }
 
-    const miembros = miembrosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
-
-    // Sort: admin > junta > familia
-    miembros.sort((a, b) => (roleOrder[a.rol as Role] ?? 99) - (roleOrder[b.rol as Role] ?? 99))
+    // Sort: admin > user, then by created_at desc
+    miembros.sort((a, b) => {
+        const roleDiff = (roleOrder[a.rol as Role] ?? 99) - (roleOrder[b.rol as Role] ?? 99)
+        if (roleDiff !== 0) return roleDiff
+        
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+        return dateB - dateA
+    })
 
     // Stats
     const totalUsuarios = miembros.filter(m => m.rol === 'user').length
@@ -92,6 +107,52 @@ export default async function AdminUsuariosPage() {
                 {/* Decorative */}
                 <Users className="absolute -right-10 -bottom-12 h-72 w-72 text-white/10 rotate-12" />
             </header>
+
+            {/* Quick Invite Panel */}
+            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">
+                            <Ticket className="h-3.5 w-3.5 text-brand" />
+                            Invitar Nuevos Miembros
+                        </div>
+                        <h3 className="text-xl font-black">Genera códigos de acceso</h3>
+                        <p className="text-sm text-white/50 font-medium">
+                            Comparte el código con las familias para que se unan al AMPA.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3 shrink-0">
+                        <form action={async () => {
+                            'use server'
+                            await createInvitations(1, 'user')
+                        }}>
+                            <button className="flex items-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-black text-slate-900 uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95">
+                                <Plus className="h-4 w-4" /> 1 Familia
+                            </button>
+                        </form>
+                        <form action={async () => {
+                            'use server'
+                            await createInvitations(5, 'user')
+                        }}>
+                            <button className="flex items-center gap-2 rounded-2xl bg-white/10 border border-white/10 px-5 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:bg-white/20 transition-all active:scale-95">
+                                <Plus className="h-4 w-4" /> 5 Familias
+                            </button>
+                        </form>
+                        <form action={async () => {
+                            'use server'
+                            await createInvitations(1, 'admin')
+                        }}>
+                            <button className="flex items-center gap-2 rounded-2xl bg-brand px-5 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-brand/30">
+                                <UserPlus className="h-4 w-4" /> Admin
+                            </button>
+                        </form>
+                        <Link href="/dashboard/admin/invitaciones" className="flex items-center gap-2 rounded-2xl bg-white/5 border border-white/10 px-5 py-3.5 text-xs font-black text-white/70 uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95">
+                            Ver Todos <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
+                </div>
+                <Ticket className="absolute -right-8 -bottom-8 h-48 w-48 text-white/5 rotate-12" />
+            </div>
 
             {/* Members Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">

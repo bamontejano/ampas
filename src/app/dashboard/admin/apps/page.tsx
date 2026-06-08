@@ -15,12 +15,16 @@ export default async function AdminAppsPage() {
         redirect('/dashboard')
     }
 
-    const appsSnapshot = await adminDb.collection('ampa_apps')
-        .where('ampa_id', '==', profile.ampa_id)
-        .orderBy('created_at', 'desc')
-        .get()
+    let apps: any[] = []
+    if (profile?.ampa_id) {
+        const appsSnapshot = await adminDb.collection('ampa_apps')
+            .where('ampa_id', '==', profile.ampa_id)
+            .get()
 
-    const apps = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[]
+        apps = (appsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() })) as any[])
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    }
 
     return (
         <div className="space-y-8">

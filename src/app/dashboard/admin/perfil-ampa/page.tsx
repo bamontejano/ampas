@@ -16,9 +16,23 @@ export default async function PerfilAmpaPage() {
     }
 
     const ampaDoc = await adminDb.collection('ampas').doc(profile.ampa_id).get()
-    const ampa = ampaDoc.exists ? { id: ampaDoc.id, ...ampaDoc.data() } as any : null
+    let ampa: any = ampaDoc.exists ? { id: ampaDoc.id, ...ampaDoc.data() } : null
 
-    if (!ampa) redirect('/dashboard')
+    // If ampa_id is set but doc doesn't exist, create it now
+    if (!ampa) {
+        const newAmpa = {
+            id: profile.ampa_id,
+            nombre: 'Mi AMPA',
+            colegio_nombre: '',
+            ciudad: '',
+            descripcion: '',
+            color_primario: 'indigo',
+            logo_url: '',
+            created_at: new Date().toISOString(),
+        }
+        await adminDb.collection('ampas').doc(profile.ampa_id).set(newAmpa)
+        ampa = newAmpa
+    }
 
     return (
         <div className="space-y-10 pb-16">

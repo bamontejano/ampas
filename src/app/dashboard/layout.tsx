@@ -53,12 +53,13 @@ export default async function DashboardLayout({
     let notifications: any[] = []
     try {
         const notifSnapshot = await adminDb.collection('notificaciones')
-            .where('perfil_id', '==', user.uid)
-            .orderBy('created_at', 'desc')
-            .limit(10)
+            .where('user_id', '==', user.uid)
             .get()
         
-        notifications = notifSnapshot.docs.map(doc => doc.data())
+        notifications = notifSnapshot.docs
+            .map(doc => doc.data())
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 10)
     } catch(e) {
         console.error('Error in DashboardLayout fetching notifs:', e)
     }
