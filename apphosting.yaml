@@ -57,11 +57,11 @@ env:
       - RUNTIME
 
   - variable: FIREBASE_CLIENT_EMAIL
-    secret: firebase-client-email
+    value: firebase-adminsdk-fbsvc@ampa-connect.iam.gserviceaccount.com
     availability:
       - RUNTIME
 
   - variable: FIREBASE_PRIVATE_KEY
-    secret: firebase-private-key
+    value: "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDCmQYxaG2P72dX\ngpKGTi4SseiCFM9cgSFBQCJeJ1x9fOs3wr/21PDO5VeNZJX0kZrl2wNRp+Dgrk8a\n1b4jX7BaAX28jVo9czWtIyDLfSkqMxCE24YQtpyFR879Fd+oxSAFTcr9TpFX8AlF\nJI8Fl0MohBjKu2Xtu31sNB/pMscTvFt8jkYBH5VndmJlBCDDISj24As3D5XocaAT\naOJJg7ydZpQG7XXDQileZFfUOexd+PFaqGNEowDOtyU0fTc4MiO+KNYeB+L82qga\nmd2idF1WQOE0W7R2r7B9b1o9U8kJSgaDLegIK6PltmKcciEK9E+o7B3AvBgG/Gt1\nOFML3XlVAgMBAAECgf989ThL85guVSlqpLUc+vp+eIbHASQmwovfTF3hwp2v9yO+\nuOxvaU2qqijVlF4L9XPll5MKBu3850bkrVxAk7GcUzxcOxM3Ynyxv1zsMfLZidR1\nQvPFq0S6if5u21XR+9+iMu6J1r8oxwi7FnekShoAo0RksZwl4b9hPBd6mYQ8iol2\nuEzxit7jcmunU7KvGO2013qA3Ot9joJAQUgVvT+0nCF0OKIEKqmiLgAAEZfeiruI\njX9k54Zqv1Yv3Iq2BBfZiej25kmkeSt8Y1x5TZvzxRmxYhB7pUlySmLK0FnEsnh8\n4jHoaHbjTPTsBXwrl4fLbsVpVlq6piZVHjW9JRECgYEA8nOfWIA7ETHiUZ2foG1B\nX2OwBb6uigeibozdr2kJZYbvRfVv47Y1XJkHZTYdqZ+vrUjvwTaknvOWsxomDo2q\nkeqqoM7wz9LhI8MKgvVSM9YtSPKazh3NaiDE2NoJ+5bGFUEaysOaFpulnJPw0+36\n441TMAy2OEG7pyPYRMV4Jo0CgYEAzXjUpd+cvPwR5bXgiVDqVxL7pqF2GkuFDPgp\nIC3gg7q4RhiOTkkO23GaFFaKmH2I9LQZe3cA2A4XvsWBipNW/kQwzgEXBz7wCG20\nRmMUXQMTmXB/cHY7T9JhOmcLHZsadCC7y30/u+SaOr4MkDXbhXXkAhqifG790cGw\nMJXIr+kCgYEAtdfmkbhLlQ/3EQPJ78dCGstoAEcOHdSwDX513tRHCfD0kWIOc5n7\n1+Gm3FCEWu68Epn7yMy1F8rXIqngFVZHsn1xUH8lupoN5oao4aQh7WMcP/RGC4Xq\nxUiim4qdpidllhdogt/GOGKxCgkjvbBmVjlvRUCjgvo6Rpfp41rATRkCgYAR2hOv\nrbPyf3wWlyzBAXS6x/1xRsn6EuGmdNEt6I5/I3PrMyr6BkLyMfaPGc3E3fNOP2+P\nWJGMM/1AJ+zPW2nNgaMz4shbas50DQQCsY0NX70OMcYAwWT51G96IYXHtrgfqtBm\nJ6Wn736u5+Azj1pZSBrdS+8eHI6U8N0b+4eKMQKBgQCGrHzV/Z81huvd8+s20zFs\n/Cwu+M+JBtShpGvuDgzues1ySvLt7c/MJgA376ZPWtknCY0Uil3C5Pa104Y+cue3\n318/CLAidegDQkYTc8e5ek98tenDafZBlVLAqMGlrftY5wp3leSE6m3ej9Yh8psO\n6z5KLIYgxzF17w6yvsszRA==\n-----END PRIVATE KEY-----\n"
     availability:
       - RUNTIME
