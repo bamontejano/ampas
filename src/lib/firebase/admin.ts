@@ -23,7 +23,7 @@ function getAdminApp(): admin.app.App {
     ? admin.credential.cert({ projectId, clientEmail, privateKey })
     : admin.credential.applicationDefault();
 
-  console.log('[AdminSDK] using credential type:', (clientEmail && privateKey) ? 'cert' : 'applicationDefault');
+
 
   return admin.initializeApp({
     credential,
