@@ -12,6 +12,11 @@ function getAdminApp(): admin.app.App {
   const rawKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/^"|"$/g, '');
   const privateKey = rawKey?.replace(/\\n/g, '\n');
 
+  console.log('[AdminSDK] projectId:', projectId);
+  console.log('[AdminSDK] clientEmail:', clientEmail);
+  console.log('[AdminSDK] privateKey starts with:', privateKey?.substring(0, 40));
+  console.log('[AdminSDK] privateKey includes real newlines:', privateKey?.includes('\n'));
+
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
       'Missing Firebase Admin credentials. Set NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.'
