@@ -7,24 +7,27 @@ function getAdminApp(): admin.app.App {
   }
 
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // Strip surrounding quotes that Firebase Console sometimes adds
+
+  if (!projectId) {
+    throw new Error('Missing NEXT_PUBLIC_FIREBASE_PROJECT_ID.');
+  }
+
+  // In production (Cloud Run / Firebase App Hosting), use Application Default Credentials
+  // which automatically uses the service account assigned to the Cloud Run instance.
+  // In local development, fall back to explicit cert credentials.
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.replace(/^"|"$/g, '');
   const rawKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/^"|"$/g, '');
   const privateKey = rawKey?.replace(/\\n/g, '\n');
 
-  console.log('[AdminSDK] projectId:', projectId);
-  console.log('[AdminSDK] clientEmail:', clientEmail);
-  console.log('[AdminSDK] privateKey starts with:', privateKey?.substring(0, 40));
-  console.log('[AdminSDK] privateKey includes real newlines:', privateKey?.includes('\n'));
+  const credential = (clientEmail && privateKey)
+    ? admin.credential.cert({ projectId, clientEmail, privateKey })
+    : admin.credential.applicationDefault();
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      'Missing Firebase Admin credentials. Set NEXT_PUBLIC_FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.'
-    );
-  }
+  console.log('[AdminSDK] using credential type:', (clientEmail && privateKey) ? 'cert' : 'applicationDefault');
 
   return admin.initializeApp({
-    credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+    credential,
+    projectId,
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 }
