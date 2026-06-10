@@ -37,47 +37,7 @@ export async function deleteThread(postId: string, categoryId: string) {
     redirect(`/dashboard/comunidad/foros/${categoryId}`)
 }
 
-
-    const user = await getUser()
-    if (!user) {
-        throw new Error('No autorizado')
-    }
-
-    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
-    const profile = profileDoc.data()
-
-    if (!profile || !('ampa_id' in profile) || !profile.ampa_id) {
-        throw new Error('No tienes un AMPA asignado')
-    }
-
-    const categoryId = formData.get('categoryId') as string
-    const title = formData.get('title') as string
-    const content = formData.get('content') as string
-    const fullContent = `${title}\n\n${content}`
-
-    try {
-        const newRef = adminDb.collection('posts').doc()
-        await newRef.set({
-            id: newRef.id,
-            autor_id: user.uid,
-            ampa_id: profile.ampa_id,
-            contenido: fullContent,
-            tipo: 'post',
-            foro_categoria_id: categoryId,
-            pinned: false,
-            likes_count: 0,
-            comentarios_count: 0,
-            created_at: new Date().toISOString()
-        })
-
-        revalidatePath(`/dashboard/comunidad/foros/${categoryId}`)
-    } catch (e: any) {
-        if (e.message === 'NEXT_REDIRECT') throw e
-        return { error: e.message || 'Error desconocido' }
-    }
-
-    redirect(`/dashboard/comunidad/foros/${categoryId}`)
-}
+export async function createThread(formData: FormData) {
 
 export async function addReply(formData: FormData) {
     const user = await getUser()
