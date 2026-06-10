@@ -5,6 +5,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import ReplyForm from '@/components/dashboard/reply-form'
 import DeleteThreadButton from '@/components/dashboard/delete-thread-button'
+import EditThreadButton from '@/components/dashboard/edit-thread-button'
+import EditReplyButton from '@/components/dashboard/edit-reply-button'
 
 interface ThreadPageProps {
     params: Promise<{ category: string; threadId: string }>
@@ -123,6 +125,14 @@ export default async function ThreadPage({ params }: ThreadPageProps) {
                             {user && (thread.autor_id === user.uid || profile?.rol === 'admin') && (
                                 <DeleteThreadButton postId={threadId} categoryId={category} variant="full" />
                             )}
+                            {user && thread.autor_id === user.uid && (
+                                <EditThreadButton
+                                    postId={threadId}
+                                    categoryId={category}
+                                    initialTitle={title}
+                                    initialContent={mainContent}
+                                />
+                            )}
                         </div>
 
                         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">
@@ -169,27 +179,38 @@ export default async function ThreadPage({ params }: ThreadPageProps) {
                     {comments && comments.length > 0 ? (
                         comments.map((comment: any) => (
                             <div key={comment.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-slate-100 overflow-hidden ring-2 ring-white">
-                                        {comment.profiles?.avatar_url ? (
-                                            <img src={comment.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
-                                        ) : (
-                                            <div className="h-full w-full flex items-center justify-center text-slate-400 bg-slate-50 font-bold text-xs">
-                                                {comment.profiles?.nombre_completo?.charAt(0) || 'U'}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-slate-700">
-                                            {comment.profiles?.nombre_completo || 'Usuario'}
-                                            {comment.profiles?.rol === 'admin' && (
-                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase">Junta</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-full bg-slate-100 overflow-hidden ring-2 ring-white">
+                                            {comment.profiles?.avatar_url ? (
+                                                <img src={comment.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                                            ) : (
+                                                <div className="h-full w-full flex items-center justify-center text-slate-400 bg-slate-50 font-bold text-xs">
+                                                    {comment.profiles?.nombre_completo?.charAt(0) || 'U'}
+                                                </div>
                                             )}
-                                        </span>
-                                        <span className="text-[11px] text-slate-400">
-                                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: es })}
-                                        </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-slate-700">
+                                                {comment.profiles?.nombre_completo || 'Usuario'}
+                                                {comment.profiles?.rol === 'admin' && (
+                                                    <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase">Junta</span>
+                                                )}
+                                            </span>
+                                            <span className="text-[11px] text-slate-400">
+                                                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: es })}
+                                                {comment.updated_at && <span className="ml-1">(editado)</span>}
+                                            </span>
+                                        </div>
                                     </div>
+                                    {user && comment.autor_id === user.uid && (
+                                        <EditReplyButton
+                                            replyId={comment.id}
+                                            postId={threadId}
+                                            categoryId={category}
+                                            initialContent={comment.contenido}
+                                        />
+                                    )}
                                 </div>
                                 <p className="text-slate-600 leading-relaxed text-sm whitespace-pre-wrap">
                                     {comment.contenido}

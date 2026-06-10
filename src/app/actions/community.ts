@@ -5,6 +5,43 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import * as admin from 'firebase-admin'
 
+export async function editThread(postId: string, categoryId: string, title: string, content: string) {
+    const user = await getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const postDoc = await adminDb.collection('posts').doc(postId).get()
+    if (!postDoc.exists) throw new Error('Hilo no encontrado')
+    const post = postDoc.data()!
+
+    if (post.autor_id !== user.uid) throw new Error('Solo el autor puede editar este hilo')
+
+    const fullContent = `${title}\n\n${content}`
+    await adminDb.collection('posts').doc(postId).update({
+        contenido: fullContent,
+        updated_at: new Date().toISOString()
+    })
+
+    revalidatePath(`/dashboard/comunidad/foros/${categoryId}/${postId}`)
+}
+
+export async function editReply(replyId: string, postId: string, categoryId: string, content: string) {
+    const user = await getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const replyDoc = await adminDb.collection('comentarios').doc(replyId).get()
+    if (!replyDoc.exists) throw new Error('Respuesta no encontrada')
+    const reply = replyDoc.data()!
+
+    if (reply.autor_id !== user.uid) throw new Error('Solo el autor puede editar esta respuesta')
+
+    await adminDb.collection('comentarios').doc(replyId).update({
+        contenido: content,
+        updated_at: new Date().toISOString()
+    })
+
+    revalidatePath(`/dashboard/comunidad/foros/${categoryId}/${postId}`)
+}
+
 export async function deleteThread(postId: string, categoryId: string) {
     const user = await getUser()
     if (!user) throw new Error('No autorizado')
