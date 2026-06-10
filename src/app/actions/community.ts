@@ -5,7 +5,39 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import * as admin from 'firebase-admin'
 
-export async function createThread(formData: FormData) {
+export async function deleteThread(postId: string, categoryId: string) {
+    const user = await getUser()
+    if (!user) throw new Error('No autorizado')
+
+    const profileDoc = await adminDb.collection('profiles').doc(user.uid).get()
+    const profile = profileDoc.data()
+
+    const postDoc = await adminDb.collection('posts').doc(postId).get()
+    if (!postDoc.exists) throw new Error('Hilo no encontrado')
+    const post = postDoc.data()!
+
+    // Only the author or an admin can delete
+    const isAuthor = post.autor_id === user.uid
+    const isAdmin = profile?.rol === 'admin'
+    if (!isAuthor && !isAdmin) throw new Error('No tienes permiso para borrar este hilo')
+
+    // Delete the post and all its comments in a batch
+    const batch = adminDb.batch()
+    batch.delete(adminDb.collection('posts').doc(postId))
+
+    const commentsSnapshot = await adminDb.collection('comentarios').where('post_id', '==', postId).get()
+    commentsSnapshot.docs.forEach(doc => batch.delete(doc.ref))
+
+    const likesSnapshot = await adminDb.collection('post_likes').where('post_id', '==', postId).get()
+    likesSnapshot.docs.forEach(doc => batch.delete(doc.ref))
+
+    await batch.commit()
+
+    revalidatePath(`/dashboard/comunidad/foros/${categoryId}`)
+    redirect(`/dashboard/comunidad/foros/${categoryId}`)
+}
+
+
     const user = await getUser()
     if (!user) {
         throw new Error('No autorizado')

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import DeleteThreadButton from '@/components/dashboard/delete-thread-button'
 
 interface CategoryPageProps {
     params: Promise<{ category: string }>
@@ -130,11 +131,16 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             <div className="grid gap-4">
                 {posts && posts.length > 0 ? (
                     posts.map((post: any) => (
-                        <Link
-                            key={post.id}
-                            href={`/dashboard/comunidad/foros/${category}/${post.id}`}
-                            className="group bg-white p-6 rounded-3xl border border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-50/50 transition-all"
-                        >
+                        <div key={post.id} className="relative group">
+                            {(post.autor_id === user.uid || profile?.rol === 'admin') && (
+                                <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DeleteThreadButton postId={post.id} categoryId={category} />
+                                </div>
+                            )}
+                            <Link
+                                href={`/dashboard/comunidad/foros/${category}/${post.id}`}
+                                className="group bg-white p-6 rounded-3xl border border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-50/50 transition-all block"
+                            >
                             <div className="flex gap-4">
                                 <div className="hidden sm:flex flex-col items-center gap-1 min-w-[3rem]">
                                     <div className="flex flex-col items-center p-2 rounded-xl bg-slate-50 group-hover:bg-indigo-50 transition-colors">
@@ -194,6 +200,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                                 )}
                             </div>
                         </Link>
+                        </div>
                     ))
                 ) : (
                     <div className="bg-white p-16 rounded-[2.5rem] border border-dashed border-slate-200 text-center flex flex-col items-center gap-4">

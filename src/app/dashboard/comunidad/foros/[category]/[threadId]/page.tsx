@@ -1,9 +1,10 @@
-import { adminDb } from '@/lib/firebase/admin'
+import { adminDb, getUser } from '@/lib/firebase/admin'
 import Link from 'next/link'
 import { ChevronLeft, Heart, MessageSquare, Share2, MoreVertical, User } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import ReplyForm from '@/components/dashboard/reply-form'
+import DeleteThreadButton from '@/components/dashboard/delete-thread-button'
 
 interface ThreadPageProps {
     params: Promise<{ category: string; threadId: string }>
@@ -11,6 +12,10 @@ interface ThreadPageProps {
 
 export default async function ThreadPage({ params }: ThreadPageProps) {
     const { category, threadId } = await params
+
+    const user = await getUser()
+    const profileDoc = user ? await adminDb.collection('profiles').doc(user.uid).get() : null
+    const profile = profileDoc?.exists ? profileDoc.data() : null
 
     // Fetch post details
     const threadDoc = await adminDb.collection('posts').doc(threadId).get()
@@ -115,6 +120,9 @@ export default async function ThreadPage({ params }: ThreadPageProps) {
                             <button className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-slate-50 text-slate-400 transition-colors">
                                 <MoreVertical className="h-5 w-5" />
                             </button>
+                            {user && (thread.autor_id === user.uid || profile?.rol === 'admin') && (
+                                <DeleteThreadButton postId={threadId} categoryId={category} variant="full" />
+                            )}
                         </div>
 
                         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">
